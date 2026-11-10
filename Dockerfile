@@ -29,7 +29,7 @@ ENV NODE_ENV=production
 COPY package.json ./
 COPY backend/package.json ./backend/
 
-RUN cd backend && npm install --only=production
+RUN cd backend && npm install --omit=dev
 
 COPY --from=builder /app/backend/dist ./backend/dist
 COPY --from=builder /app/frontend/dist ./frontend/dist
