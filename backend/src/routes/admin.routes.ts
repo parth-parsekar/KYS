@@ -62,25 +62,35 @@ router.get('/dashboard', async (req: AuthRequest, res: Response): Promise<void> 
   }
 });
 
-// GET /api/admin/export - Export platform metrics summary
+// GET /api/admin/export - Export platform metrics summary as CSV
 router.get('/export', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const exportData = {
-      exportDate: new Date().toISOString(),
-      platform: 'KYS - Know Your Subscription Manager',
-      totalUsers: 1842,
-      activeSubscriptions: 6230,
-      reportingCurrency: 'USD',
-      categoryBreakdown: [
-        { category: 'Work tools', count: 3000, percentage: 48.2 },
-        { category: 'Entertainment', count: 1400, percentage: 22.5 },
-        { category: 'Productivity', count: 1300, percentage: 20.9 },
-        { category: 'Storage', count: 530, percentage: 8.5 },
-      ],
-    };
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', 'attachment; filename=kys-platform-report.json');
-    res.send(JSON.stringify(exportData, null, 2));
+    const today = new Date().toISOString().split('T')[0];
+    const categoryRows = [
+      ['Work tools', '3000', '48.2%'],
+      ['Entertainment', '1400', '22.5%'],
+      ['Productivity', '1300', '20.9%'],
+      ['Storage', '530', '8.5%'],
+    ];
+
+    const lines = [
+      'KYS Platform Overview Report',
+      `Export Date,${today}`,
+      'Platform,KYS - Know Your Subscription Manager',
+      'Total Registered Users,1842',
+      'Active Subscriptions,6230',
+      'Reporting Currency,USD',
+      '',
+      'Category Distribution',
+      'Category,Active Subscriptions,Share of Total',
+      ...categoryRows.map((row) => row.join(',')),
+    ];
+
+    const csvContent = lines.join('\r\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="kys-platform-report.csv"');
+    res.status(200).send(csvContent);
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message });
   }
