@@ -9,6 +9,7 @@ export const Subscriptions: React.FC = () => {
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [meta, setMeta] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Filter states
   const [search, setSearch] = useState(searchParams.get('search') || '');
@@ -59,6 +60,17 @@ export const Subscriptions: React.FC = () => {
     loadSubscriptions();
   };
 
+  const handleExportCsv = async () => {
+    try {
+      setIsExporting(true);
+      await api.exportSubscriptionsCsv();
+    } catch (err: any) {
+      alert(err.message || 'Failed to export CSV');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const counts = meta?.counts || { all: 0, active: 0, paused: 0, cancelled: 0, expired: 0 };
 
   return (
@@ -69,12 +81,22 @@ export const Subscriptions: React.FC = () => {
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-[#111827]">My subscriptions</h2>
           <p className="text-xs md:text-sm text-[#6B7280] mt-1">All your subscriptions, in one place.</p>
         </div>
-        <button
-          onClick={() => navigate('/add')}
-          className="inline-flex items-center justify-center px-4 py-2.5 bg-[#18181B] text-white text-xs font-medium rounded-lg hover:bg-black transition-colors shadow-sm self-start md:self-auto"
-        >
-          + Add subscription
-        </button>
+        <div className="flex items-center space-x-2.5 self-start md:self-auto">
+          <button
+            onClick={handleExportCsv}
+            disabled={isExporting || subscriptions.length === 0}
+            className="inline-flex items-center justify-center px-3.5 py-2.5 bg-white border border-[#D1D5DB] text-[#374151] hover:bg-gray-50 text-xs font-medium rounded-lg transition-colors shadow-sm disabled:opacity-40"
+            title="Download your subscriptions as CSV (PRD 3.4)"
+          >
+            {isExporting ? 'Exporting...' : '↓ Export CSV'}
+          </button>
+          <button
+            onClick={() => navigate('/add')}
+            className="inline-flex items-center justify-center px-4 py-2.5 bg-[#18181B] text-white text-xs font-medium rounded-lg hover:bg-black transition-colors shadow-sm"
+          >
+            + Add subscription
+          </button>
+        </div>
       </div>
 
       {/* Filter Row matching wireframe 02 */}

@@ -75,6 +75,56 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
   }
 });
 
+// GET /api/subscriptions/export/csv - Export user subscriptions as CSV (PRD Section 3.4)
+router.get('/export/csv', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!._id;
+    const subscriptions = await Subscription.find({ user: userId }).sort({ serviceName: 1 });
+
+    const headers = [
+      'Service Name',
+      'Category',
+      'Amount',
+      'Currency',
+      'Billing Frequency',
+      'Monthly Equivalent',
+      'Status',
+      'Start Date',
+      'Next Renewal Date',
+      'Custom Entry',
+      'Notes',
+    ];
+
+    const escapeCsv = (val: any) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
+    const rows = subscriptions.map((s) => [
+      escapeCsv(s.serviceName),
+      escapeCsv(s.category),
+      escapeCsv(s.amount.toFixed(2)),
+      escapeCsv(s.currency),
+      escapeCsv(s.billingFrequency),
+      escapeCsv(s.getMonthlyEquivalent().toFixed(2)),
+      escapeCsv(s.status),
+      escapeCsv(new Date(s.startDate).toISOString().split('T')[0]),
+      escapeCsv(new Date(s.nextRenewalDate).toISOString().split('T')[0]),
+      escapeCsv(s.customService ? 'Yes' : 'No'),
+      escapeCsv(s.notes || ''),
+    ].join(','));
+
+    const csvContent = [headers.join(','), ...rows].join('\r\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="kys-subscriptions.csv"');
+    res.status(200).send(csvContent);
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Error exporting subscriptions' });
+  }
+});
+
 // GET /api/subscriptions/:id - Get single subscription with billing history
 router.get('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
   try {

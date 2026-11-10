@@ -26,6 +26,18 @@ async function bootstrap() {
       console.log(` API Health: http://localhost:${PORT}/api/health`);
       console.log(`===============================================`);
     });
+
+    // Graceful shutdown handling
+    const shutdown = (signal: string) => {
+      console.log(`\n[Server] Received ${signal}. Closing gracefully...`);
+      server.close(() => {
+        console.log('[Server] HTTP connections terminated.');
+        process.exit(0);
+      });
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
   } catch (err) {
     console.error('Fatal initialization error:', err);
     process.exit(1);

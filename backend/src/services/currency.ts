@@ -49,3 +49,4 @@ export function convertCurrency(
 
   return Math.round(converted * 100) / 100;
 }
+

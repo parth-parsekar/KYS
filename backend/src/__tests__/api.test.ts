@@ -246,4 +246,15 @@ describe('KYS PRD Acceptance Tests', () => {
     expect(convertCurrency(75, 'XYZ', 'USD')).toBe(75);
     expect(convertCurrency(0, 'USD', 'EUR')).toBe(0);
   });
+
+  test('10. Data Export: Generates RFC 4180 CSV export (PRD Section 3.4)', async () => {
+    const csvRes = await request(app)
+      .get('/api/subscriptions/export/csv')
+      .set('Authorization', `Bearer ${userToken}`);
+
+    expect(csvRes.status).toBe(200);
+    expect(csvRes.headers['content-type']).toMatch(/text\/csv/);
+    expect(csvRes.headers['content-disposition']).toMatch(/kys-subscriptions\.csv/);
+    expect(csvRes.text).toContain('Service Name,Category,Amount,Currency,Billing Frequency');
+  });
 });

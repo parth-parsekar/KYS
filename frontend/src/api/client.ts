@@ -90,6 +90,23 @@ export const api = {
     return request<{ success: boolean; data: any[]; meta: any }>(`/subscriptions?${query.toString()}`);
   },
 
+  exportSubscriptionsCsv: async () => {
+    const token = getToken();
+    const res = await fetch('/api/subscriptions/export/csv', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error('Could not export CSV');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `kys-subscriptions-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
   getSubscriptionById: (id: string) =>
     request<{ success: boolean; subscription: any; monthlyEquivalent: number; billingEvents: any[] }>(
       `/subscriptions/${id}`
