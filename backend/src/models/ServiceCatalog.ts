@@ -40,3 +40,4 @@ const ServiceCatalogSchema = new Schema<IServiceCatalog>(
 );
 
 export const ServiceCatalog = mongoose.model<IServiceCatalog>('ServiceCatalog', ServiceCatalogSchema);
+

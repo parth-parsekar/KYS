@@ -51,3 +51,4 @@ export function generateToken(user: IUser): string {
     { expiresIn: '7d' }
   );
 }
+

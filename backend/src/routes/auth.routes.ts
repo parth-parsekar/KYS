@@ -161,3 +161,4 @@ router.put('/profile', authenticate, async (req: AuthRequest, res: Response): Pr
 });
 
 export default router;
+

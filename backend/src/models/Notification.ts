@@ -40,3 +40,4 @@ NotificationSchema.index(
 );
 
 export const Notification = mongoose.model<INotification>('Notification', NotificationSchema);
+

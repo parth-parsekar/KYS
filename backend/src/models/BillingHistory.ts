@@ -44,3 +44,4 @@ const BillingHistorySchema = new Schema<IBillingHistory>(
 );
 
 export const BillingHistory = mongoose.model<IBillingHistory>('BillingHistory', BillingHistorySchema);
+

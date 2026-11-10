@@ -71,3 +71,4 @@ SubscriptionSchema.methods.getMonthlyEquivalent = function (): number {
 };
 
 export const Subscription = mongoose.model<ISubscription>('Subscription', SubscriptionSchema);
+

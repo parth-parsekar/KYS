@@ -59,3 +59,4 @@ router.post('/:subscriptionId', async (req: AuthRequest, res: Response): Promise
 });
 
 export default router;
+

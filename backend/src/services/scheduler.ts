@@ -142,3 +142,4 @@ export function startScheduler(): void {
   });
   console.log('Background renewal scheduler initialized.');
 }
+

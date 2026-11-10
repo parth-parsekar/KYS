@@ -306,3 +306,4 @@ export const PreferencesBudget: React.FC = () => {
     </div>
   );
 };
+

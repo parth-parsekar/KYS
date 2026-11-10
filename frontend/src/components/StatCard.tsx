@@ -25,3 +25,4 @@ export const StatCard: React.FC<StatCardProps> = ({ label, value, subtext, badge
     </div>
   );
 };
+
