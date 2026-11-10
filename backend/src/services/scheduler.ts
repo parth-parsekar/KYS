@@ -3,7 +3,7 @@ import { Subscription } from '../models/Subscription.js';
 import { Notification } from '../models/Notification.js';
 import { User } from '../models/User.js';
 import { sendNotificationToUser } from './socket.js';
-import { convertCurrency } from './currency.js';
+import { convertCurrency, getCurrencySymbol } from './currency.js';
 
 export async function checkRenewalsAndBudgets(): Promise<{ renewalAlerts: number; budgetAlerts: number }> {
   let renewalAlertsCreated = 0;
@@ -44,7 +44,7 @@ export async function checkRenewalsAndBudgets(): Promise<{ renewalAlerts: number
           subscription: sub._id,
           type: 'renewal_upcoming',
           title: `${sub.serviceName} renews ${daysText}`,
-          message: `$${sub.amount.toFixed(2)} ${sub.currency} · Renews ${cycleDateStr}`,
+          message: `${getCurrencySymbol(sub.currency)}${sub.amount.toFixed(2)} ${sub.currency} · Renews ${cycleDateStr}`,
           renewalCycleIdentifier: cycleIdentifier,
           metadata: {
             serviceName: sub.serviceName,

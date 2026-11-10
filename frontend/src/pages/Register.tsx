@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { detectDefaultCurrency, detectDefaultTimezone } from '../utils/currencyUtils';
 
 export const Register: React.FC = () => {
   const navigate = useNavigate();
@@ -9,8 +10,8 @@ export const Register: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [preferredCurrency, setPreferredCurrency] = useState('USD');
-  const [timezone, setTimezone] = useState('America/Los_Angeles');
+  const [preferredCurrency, setPreferredCurrency] = useState(detectDefaultCurrency());
+  const [timezone, setTimezone] = useState(detectDefaultTimezone());
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -152,11 +153,12 @@ export const Register: React.FC = () => {
                   onChange={(e) => setPreferredCurrency(e.target.value)}
                   className="w-full text-xs text-[#111827] bg-white border border-[#D1D5DB] rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#111827]"
                 >
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="GBP">GBP</option>
-                  <option value="INR">INR</option>
-                  <option value="CAD">CAD</option>
+                  <option value="USD">USD ($)</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="GBP">GBP (£)</option>
+                  <option value="INR">INR (₹)</option>
+                  <option value="CAD">CAD (CA$)</option>
+                  <option value="AUD">AUD (AU$)</option>
                 </select>
               </div>
 
@@ -167,10 +169,36 @@ export const Register: React.FC = () => {
                   onChange={(e) => setTimezone(e.target.value)}
                   className="w-full text-xs text-[#111827] bg-white border border-[#D1D5DB] rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#111827]"
                 >
-                  <option value="America/Los_Angeles">America/Los_Angeles</option>
-                  <option value="America/New_York">America/New_York</option>
-                  <option value="Europe/London">Europe/London</option>
-                  <option value="Asia/Kolkata">Asia/Kolkata</option>
+                  {[
+                    'Asia/Kolkata',
+                    'America/New_York',
+                    'America/Chicago',
+                    'America/Denver',
+                    'America/Los_Angeles',
+                    'Europe/London',
+                    'Europe/Paris',
+                    'Europe/Berlin',
+                    'Asia/Dubai',
+                    'Asia/Singapore',
+                    'Asia/Tokyo',
+                    'Australia/Sydney',
+                    'UTC',
+                  ].includes(timezone) ? null : (
+                    <option value={timezone}>{timezone} (Detected)</option>
+                  )}
+                  <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                  <option value="Europe/London">Europe/London (GMT/BST)</option>
+                  <option value="Europe/Paris">Europe/Paris (CET)</option>
+                  <option value="Europe/Berlin">Europe/Berlin (CET)</option>
+                  <option value="America/New_York">America/New_York (EST)</option>
+                  <option value="America/Chicago">America/Chicago (CST)</option>
+                  <option value="America/Denver">America/Denver (MST)</option>
+                  <option value="America/Los_Angeles">America/Los_Angeles (PST)</option>
+                  <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+                  <option value="Asia/Singapore">Asia/Singapore (SGT)</option>
+                  <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+                  <option value="Australia/Sydney">Australia/Sydney (AEST)</option>
+                  <option value="UTC">UTC</option>
                 </select>
               </div>
             </div>

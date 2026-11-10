@@ -15,6 +15,7 @@ import {
 } from 'recharts';
 import { api } from '../api/client';
 import { StatCard } from '../components/StatCard';
+import { getCurrencySymbol } from '../utils/currencyUtils';
 
 const DONUT_COLORS = ['#334155', '#64748B', '#94A3B8', '#CBD5E1', '#E2E8F0'];
 
@@ -57,6 +58,7 @@ export const Analytics: React.FC = () => {
     categoryDistribution,
     historicalTrends,
   } = data;
+  const sym = getCurrencySymbol(currency);
 
   const pieData = categoryDistribution.map((item: any) => ({
     name: item.category,
@@ -82,9 +84,12 @@ export const Analytics: React.FC = () => {
             onChange={(e) => setCurrency(e.target.value)}
             className="text-xs bg-white border border-[#E5E7EB] rounded-lg px-3.5 py-2 text-[#374151] focus:outline-none"
           >
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
-            <option value="GBP">GBP</option>
+            <option value="USD">USD ($)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="GBP">GBP (£)</option>
+            <option value="INR">INR (₹)</option>
+            <option value="CAD">CAD (CA$)</option>
+            <option value="AUD">AUD (AU$)</option>
           </select>
         </div>
       </div>
@@ -93,23 +98,23 @@ export const Analytics: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label="Active monthly total"
-          value={`$${monthlySpending.toFixed(2)}`}
+          value={`${sym}${monthlySpending.toFixed(2)}`}
           subtext="Monthly equivalents"
         />
         <StatCard
           label="Annualized total"
-          value={`$${annualProjection.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={`${sym}${annualProjection.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           subtext="Current active subscriptions"
         />
         <StatCard
           label="Upcoming expenditure"
-          value={`$${upcomingRenewals.totalAmount.toFixed(2)}`}
+          value={`${sym}${upcomingRenewals.totalAmount.toFixed(2)}`}
           subtext={`${upcomingRenewals.count} renewals in the next 7 days`}
         />
         <StatCard
           label="Budget remaining"
-          value={`$${budget.remaining.toFixed(2)}`}
-          subtext={`${budget.usedPercentage}% of $${budget.limit} used`}
+          value={`${sym}${budget.remaining.toFixed(2)}`}
+          subtext={`${budget.usedPercentage}% of ${sym}${budget.limit} used`}
         />
       </div>
 
@@ -126,9 +131,9 @@ export const Analytics: React.FC = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={historicalTrends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <XAxis dataKey="month" stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
+                  <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `${sym}${v}`} />
                   <Tooltip
-                    formatter={(val: any) => [`$${val}`, 'Monthly trend']}
+                    formatter={(val: any) => [`${sym}${val}`, 'Monthly trend']}
                     contentStyle={{ backgroundColor: '#18181B', borderRadius: '8px', color: '#fff', fontSize: '12px', border: 'none' }}
                   />
                   <Line
@@ -148,11 +153,11 @@ export const Analytics: React.FC = () => {
                 const prevName = historicalTrends?.length >= 2 ? historicalTrends[historicalTrends.length - 2].month : 'previous month';
                 const diff = monthlySpending - prev;
                 if (prev === 0 && monthlySpending === 0) return 'No spending recorded in previous months.';
-                if (prev === 0) return `Change: +$${diff.toFixed(2)} vs. ${prevName}`;
+                if (prev === 0) return `Change: +${sym}${diff.toFixed(2)} vs. ${prevName}`;
                 const pct = ((diff / prev) * 100).toFixed(1);
                 return diff >= 0
-                  ? `Change: +$${diff.toFixed(2)} (+${pct}%) vs. ${prevName}`
-                  : `Change: -$${Math.abs(diff).toFixed(2)} (${pct}%) vs. ${prevName}`;
+                  ? `Change: +${sym}${diff.toFixed(2)} (+${pct}%) vs. ${prevName}`
+                  : `Change: -${sym}${Math.abs(diff).toFixed(2)} (${pct}%) vs. ${prevName}`;
               })()}
             </p>
           </div>
@@ -160,15 +165,15 @@ export const Analytics: React.FC = () => {
           {/* Monthly expenditure (Bar Chart) */}
           <div className="bg-white border border-[#E5E7EB] rounded-xl p-6">
             <h3 className="text-sm font-semibold text-[#111827]">Monthly expenditure</h3>
-            <p className="text-xs text-[#6B7280] mt-0.5">Synthetic demo billing events · USD · Dec 2025 – Nov 2026</p>
+            <p className="text-xs text-[#6B7280] mt-0.5">Synthetic demo billing events · {currency} · Dec 2025 – Nov 2026</p>
 
             <div className="h-60 w-full pt-4">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={historicalTrends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <XAxis dataKey="month" stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
+                  <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `${sym}${v}`} />
                   <Tooltip
-                    formatter={(val: any) => [`$${val}`, 'Expenditure']}
+                    formatter={(val: any) => [`${sym}${val}`, 'Expenditure']}
                     contentStyle={{ backgroundColor: '#18181B', borderRadius: '8px', color: '#fff', fontSize: '12px', border: 'none' }}
                   />
                   <Bar
@@ -194,7 +199,7 @@ export const Analytics: React.FC = () => {
           {/* Category distribution (Donut Chart) */}
           <div className="bg-white border border-[#E5E7EB] rounded-xl p-6">
             <h3 className="text-sm font-semibold text-[#111827]">Category distribution</h3>
-            <p className="text-xs text-[#6B7280] mt-0.5">Active monthly equivalents · USD</p>
+            <p className="text-xs text-[#6B7280] mt-0.5">Active monthly equivalents · {currency}</p>
 
             <div className="h-52 w-full relative flex items-center justify-center my-2">
               <ResponsiveContainer width="100%" height="100%">
@@ -212,11 +217,11 @@ export const Analytics: React.FC = () => {
                       <Cell key={`cell-${index}`} fill={DONUT_COLORS[index % DONUT_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(val: any) => [`$${val}`, 'Amount']} />
+                  <Tooltip formatter={(val: any) => [`${sym}${val}`, 'Amount']} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute text-center pointer-events-none">
-                <div className="text-lg font-bold text-[#111827]">${Math.round(monthlySpending)}</div>
+                <div className="text-lg font-bold text-[#111827]">{sym}{Math.round(monthlySpending)}</div>
                 <div className="text-[10px] text-[#6B7280]">/ month</div>
               </div>
             </div>
@@ -233,7 +238,7 @@ export const Analytics: React.FC = () => {
                     <span className="text-[#374151] font-medium">{item.category}</span>
                   </div>
                   <div className="text-[#6B7280]">
-                    ${Math.round(item.amount)} · {item.percentage}%
+                    {sym}{Math.round(item.amount)} · {item.percentage}%
                   </div>
                 </div>
               ))}
@@ -245,7 +250,7 @@ export const Analytics: React.FC = () => {
             <div>
               <h3 className="text-sm font-semibold text-[#111827]">Budget tracking</h3>
               <div className="text-2xl font-bold text-[#111827] mt-3">
-                ${Math.round(budget.current)} of ${budget.limit}
+                {sym}{Math.round(budget.current)} of {sym}{budget.limit}
               </div>
             </div>
 
@@ -258,7 +263,7 @@ export const Analytics: React.FC = () => {
               </div>
               <div className="flex justify-between items-center text-xs text-[#6B7280]">
                 <span>{budget.usedPercentage}% used</span>
-                <span>${budget.remaining} remaining</span>
+                <span>{sym}{budget.remaining} remaining</span>
               </div>
             </div>
 

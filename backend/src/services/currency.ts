@@ -50,3 +50,22 @@ export function convertCurrency(
   return Math.round(converted * 100) / 100;
 }
 
+export function getCurrencySymbol(currency: string = 'USD'): string {
+  const code = (currency || 'USD').toUpperCase().trim();
+  switch (code) {
+    case 'EUR':
+      return '€';
+    case 'GBP':
+      return '£';
+    case 'INR':
+      return '₹';
+    case 'CAD':
+      return 'CA$';
+    case 'AUD':
+      return 'AU$';
+    case 'USD':
+    default:
+      return '$';
+  }
+}
+

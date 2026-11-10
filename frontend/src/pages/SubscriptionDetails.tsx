@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { ConfirmationModal, ModalType } from '../components/ConfirmationModal';
 import { RecordBillingModal } from '../components/RecordBillingModal';
 import { calculateNextRenewal } from '../utils/dateUtils';
+import { getCurrencySymbol } from '../utils/currencyUtils';
 
 export const SubscriptionDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -186,7 +187,7 @@ export const SubscriptionDetails: React.FC = () => {
 
             <div>
               <div className="text-3xl font-bold text-[#111827]">
-                ${sub.amount.toFixed(2)} {sub.currency} <span className="text-base font-normal text-[#6B7280]">/ {sub.billingFrequency.toLowerCase()}</span>
+                {getCurrencySymbol(sub.currency)}{sub.amount.toFixed(2)} <span className="text-sm font-normal text-[#6B7280]">{sub.currency}</span> <span className="text-base font-normal text-[#6B7280]">/ {sub.billingFrequency.toLowerCase()}</span>
               </div>
             </div>
 
@@ -210,7 +211,7 @@ export const SubscriptionDetails: React.FC = () => {
               </div>
               <div className="py-2.5 flex justify-between">
                 <span className="text-[#6B7280]">Monthly equivalent</span>
-                <span className="font-semibold text-[#111827]">${monthlyEquivalent.toFixed(2)} {sub.currency}</span>
+                <span className="font-semibold text-[#111827]">{getCurrencySymbol(sub.currency)}{monthlyEquivalent.toFixed(2)} {sub.currency}</span>
               </div>
               <div className="py-2.5 flex justify-between">
                 <span className="text-[#6B7280]">Subscription ID</span>
@@ -288,7 +289,7 @@ export const SubscriptionDetails: React.FC = () => {
                       <span className="text-[#9CA3AF] text-[11px] ml-2">({evt.eventType})</span>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <span className="font-semibold text-[#111827]">${evt.billingAmount.toFixed(2)}</span>
+                      <span className="font-semibold text-[#111827]">{getCurrencySymbol(evt.currency || sub.currency)}{evt.billingAmount.toFixed(2)}</span>
                       <span className="text-[11px] text-[#6B7280] capitalize">{evt.dataSource}</span>
                     </div>
                   </div>

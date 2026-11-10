@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
+import { getCurrencySymbol } from '../utils/currencyUtils';
 
 export const PreferencesBudget: React.FC = () => {
   const { user, updateProfile, refreshUser } = useAuth();
@@ -137,16 +138,20 @@ export const PreferencesBudget: React.FC = () => {
               <label className="block text-xs font-medium text-[#374151] mb-1">Preferred currency</label>
               <select
                 value={preferredCurrency}
-                onChange={(e) => setPreferredCurrency(e.target.value)}
+                onChange={(e) => {
+                  setPreferredCurrency(e.target.value);
+                  setBudgetCurrency(e.target.value);
+                }}
                 className="w-full text-xs text-[#111827] bg-white border border-[#D1D5DB] rounded-lg px-3.5 py-2.5 focus:outline-none focus:border-[#111827]"
               >
-                <option value="USD">USD — US Dollar</option>
-                <option value="EUR">EUR — Euro</option>
-                <option value="GBP">GBP — British Pound</option>
-                <option value="INR">INR — Indian Rupee</option>
-                <option value="CAD">CAD — Canadian Dollar</option>
+                <option value="USD">USD — US Dollar ($)</option>
+                <option value="EUR">EUR — Euro (€)</option>
+                <option value="GBP">GBP — British Pound (£)</option>
+                <option value="INR">INR — Indian Rupee (₹)</option>
+                <option value="CAD">CAD — Canadian Dollar (CA$)</option>
+                <option value="AUD">AUD — Australian Dollar (AU$)</option>
               </select>
-              <p className="text-[11px] text-[#9CA3AF] mt-1">Currencies remain separate; totals are not converted.</p>
+              <p className="text-[11px] text-[#9CA3AF] mt-1">Spending and budget totals convert to your preferred currency.</p>
             </div>
 
             <div>
@@ -156,12 +161,36 @@ export const PreferencesBudget: React.FC = () => {
                 onChange={(e) => setTimezone(e.target.value)}
                 className="w-full text-xs text-[#111827] bg-white border border-[#D1D5DB] rounded-lg px-3.5 py-2.5 focus:outline-none focus:border-[#111827]"
               >
-                <option value="America/Los_Angeles">America / Los_Angeles</option>
-                <option value="America/New_York">America / New_York</option>
-                <option value="Europe/London">Europe / London</option>
-                <option value="Europe/Berlin">Europe / Berlin</option>
-                <option value="Asia/Kolkata">Asia / Kolkata</option>
-                <option value="Asia/Tokyo">Asia / Tokyo</option>
+                {[
+                  'Asia/Kolkata',
+                  'America/New_York',
+                  'America/Chicago',
+                  'America/Denver',
+                  'America/Los_Angeles',
+                  'Europe/London',
+                  'Europe/Paris',
+                  'Europe/Berlin',
+                  'Asia/Dubai',
+                  'Asia/Singapore',
+                  'Asia/Tokyo',
+                  'Australia/Sydney',
+                  'UTC',
+                ].includes(timezone) ? null : (
+                  <option value={timezone}>{timezone} (Current)</option>
+                )}
+                <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                <option value="Europe/London">Europe/London (GMT/BST)</option>
+                <option value="Europe/Paris">Europe/Paris (CET)</option>
+                <option value="Europe/Berlin">Europe/Berlin (CET)</option>
+                <option value="America/New_York">America/New_York (EST)</option>
+                <option value="America/Chicago">America/Chicago (CST)</option>
+                <option value="America/Denver">America/Denver (MST)</option>
+                <option value="America/Los_Angeles">America/Los_Angeles (PST)</option>
+                <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+                <option value="Asia/Singapore">Asia/Singapore (SGT)</option>
+                <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+                <option value="Australia/Sydney">Australia/Sydney (AEST)</option>
+                <option value="UTC">UTC</option>
               </select>
               <p className="text-[11px] text-[#9CA3AF] mt-1">Renewals and reminders use this time zone.</p>
             </div>
@@ -223,10 +252,12 @@ export const PreferencesBudget: React.FC = () => {
                   onChange={(e) => setBudgetCurrency(e.target.value)}
                   className="w-full text-xs text-[#111827] bg-white border border-[#D1D5DB] rounded-lg px-3.5 py-2.5 focus:outline-none focus:border-[#111827]"
                 >
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="GBP">GBP</option>
-                  <option value="INR">INR</option>
+                  <option value="USD">USD ($)</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="GBP">GBP (£)</option>
+                  <option value="INR">INR (₹)</option>
+                  <option value="CAD">CAD (CA$)</option>
+                  <option value="AUD">AUD (AU$)</option>
                 </select>
               </div>
             </div>
@@ -263,7 +294,7 @@ export const PreferencesBudget: React.FC = () => {
             <div className="p-5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl space-y-3">
               <span className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider">Current month</span>
               <div className="text-2xl font-bold text-[#111827]">
-                ${currentSpend} of ${Math.round(limitNum)}
+                {getCurrencySymbol(budgetCurrency)}{currentSpend} of {getCurrencySymbol(budgetCurrency)}{Math.round(limitNum)}
               </div>
 
               <div className="w-full bg-[#E5E7EB] rounded-full h-2 overflow-hidden">
@@ -275,7 +306,7 @@ export const PreferencesBudget: React.FC = () => {
 
               <div className="flex justify-between items-center text-xs text-[#6B7280]">
                 <span>{usedPct}% used</span>
-                <span>${remaining} remaining</span>
+                <span>{getCurrencySymbol(budgetCurrency)}{remaining} remaining</span>
               </div>
             </div>
 

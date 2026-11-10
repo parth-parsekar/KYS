@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
+import { getCurrencySymbol } from '../utils/currencyUtils';
 
 export const Subscriptions: React.FC = () => {
   const navigate = useNavigate();
@@ -175,7 +176,7 @@ export const Subscriptions: React.FC = () => {
 
         {meta && (
           <div className="text-xs text-[#6B7280] font-normal">
-            Active total: <span className="font-semibold text-[#111827]">${meta.activeMonthlyTotal} / month</span> · <span className="font-semibold text-[#111827]">${meta.activeAnnualTotal} / year</span>
+            Active total: <span className="font-semibold text-[#111827]">{getCurrencySymbol(meta.currency)}{meta.activeMonthlyTotal} / month</span> · <span className="font-semibold text-[#111827]">{getCurrencySymbol(meta.currency)}{meta.activeAnnualTotal} / year</span>
           </div>
         )}
       </div>
@@ -228,7 +229,7 @@ export const Subscriptions: React.FC = () => {
                 {/* Card Middle: Price & Frequency */}
                 <div>
                   <div className="text-xl font-bold text-[#111827]">
-                    ${sub.amount.toFixed(2)} {sub.currency}
+                    {getCurrencySymbol(sub.currency)}{sub.amount.toFixed(2)} <span className="text-xs font-normal text-[#6B7280]">{sub.currency}</span>
                   </div>
                   <div className="text-xs text-[#6B7280] mt-0.5">
                     {sub.billingFrequency}

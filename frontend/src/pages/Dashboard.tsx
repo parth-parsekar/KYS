@@ -2,10 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import { StatCard } from '../components/StatCard';
+import { getCurrencySymbol } from '../utils/currencyUtils';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [analytics, setAnalytics] = useState<any>(null);
@@ -54,15 +57,17 @@ export const Dashboard: React.FC = () => {
   }
 
   const { monthlySpending, annualProjection, activeCount, categoriesCount, upcomingRenewals, budget, categoryDistribution, historicalTrends } = analytics;
+  const userCurrency = analytics?.currency || user?.preferredCurrency || 'USD';
+  const sym = getCurrencySymbol(userCurrency);
 
   const prevMonthSpend = historicalTrends?.length >= 2 ? historicalTrends[historicalTrends.length - 2].amount : 0;
   const monthDiff = monthlySpending - prevMonthSpend;
   const monthDiffSubtext =
     monthDiff > 0
-      ? `+$${monthDiff.toFixed(2)} vs. last month`
+      ? `+${sym}${monthDiff.toFixed(2)} vs. last month`
       : monthDiff < 0
-      ? `-$${Math.abs(monthDiff).toFixed(2)} vs. last month`
-      : '$0.00 vs. last month';
+      ? `-${sym}${Math.abs(monthDiff).toFixed(2)} vs. last month`
+      : `${sym}0.00 vs. last month`;
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
@@ -84,12 +89,12 @@ export const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label="Monthly spending"
-          value={`$${monthlySpending.toFixed(2)}`}
+          value={`${sym}${monthlySpending.toFixed(2)}`}
           subtext={monthDiffSubtext}
         />
         <StatCard
           label="Annual projection"
-          value={`$${annualProjection.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={`${sym}${annualProjection.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           subtext="Based on current subscriptions"
         />
         <StatCard
@@ -122,9 +127,9 @@ export const Dashboard: React.FC = () => {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={historicalTrends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <XAxis dataKey="month" stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
+                <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `${sym}${v}`} />
                 <Tooltip
-                  formatter={(val: any) => [`$${val}`, 'Expenditure']}
+                  formatter={(val: any) => [`${sym}${val}`, 'Expenditure']}
                   contentStyle={{ backgroundColor: '#18181B', borderRadius: '8px', color: '#fff', fontSize: '12px', border: 'none' }}
                 />
                 <Bar
@@ -151,8 +156,8 @@ export const Dashboard: React.FC = () => {
           <div>
             <h3 className="text-sm font-semibold text-[#111827]">Monthly budget</h3>
             <div className="mt-4">
-              <span className="text-3xl font-bold text-[#111827]">${Math.round(budget.current)}</span>
-              <span className="text-xs text-[#6B7280] ml-2">of ${budget.limit} budget</span>
+              <span className="text-3xl font-bold text-[#111827]">{sym}{Math.round(budget.current)}</span>
+              <span className="text-xs text-[#6B7280] ml-2">of {sym}{budget.limit} budget</span>
             </div>
 
             {/* Progress bar */}
@@ -165,7 +170,7 @@ export const Dashboard: React.FC = () => {
               </div>
               <div className="flex justify-between items-center text-xs text-[#6B7280] mt-2 font-medium">
                 <span>{budget.usedPercentage}% used</span>
-                <span>${budget.remaining} remaining</span>
+                <span>{sym}{budget.remaining} remaining</span>
               </div>
             </div>
 
@@ -195,7 +200,7 @@ export const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between pb-4 border-b border-[#F3F4F6]">
             <div>
               <h3 className="text-sm font-semibold text-[#111827]">Upcoming renewals</h3>
-              <p className="text-xs text-[#6B7280] mt-0.5">Next 7 days · ${upcomingRenewals.totalAmount.toFixed(2)} due</p>
+              <p className="text-xs text-[#6B7280] mt-0.5">Next 7 days · {sym}{upcomingRenewals.totalAmount.toFixed(2)} due</p>
             </div>
             <button
               onClick={() => navigate('/subscriptions')}
@@ -226,7 +231,7 @@ export const Dashboard: React.FC = () => {
                     {new Date(sub.nextRenewalDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </div>
                   <div className="text-xs font-semibold text-[#111827] text-right">
-                    ${sub.amount.toFixed(2)}
+                    {getCurrencySymbol(sub.currency)}{sub.amount.toFixed(2)}
                   </div>
                 </div>
               ))
@@ -245,7 +250,7 @@ export const Dashboard: React.FC = () => {
                 <div key={cat.category} className="space-y-1.5">
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-[#374151] font-normal">{cat.category}</span>
-                    <span className="text-[#111827] font-semibold">${Math.round(cat.amount)}</span>
+                    <span className="text-[#111827] font-semibold">{sym}{Math.round(cat.amount)}</span>
                   </div>
                   <div className="w-full bg-[#F3F4F6] rounded-full h-1.5 overflow-hidden">
                     <div
@@ -263,7 +268,7 @@ export const Dashboard: React.FC = () => {
       {/* Footer disclaimer matching Screen 01 */}
       <footer className="pt-4 border-t border-[#E5E7EB] text-center md:text-left">
         <p className="text-[11px] text-[#9CA3AF]">
-          Demo data · Active subscriptions only · USD totals; other currencies are kept separate · Nov 10, 2026
+          Active subscriptions only · All values unified in {userCurrency} · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
         </p>
       </footer>
     </div>

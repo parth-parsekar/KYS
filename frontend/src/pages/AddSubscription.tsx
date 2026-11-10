@@ -3,10 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { calculateNextRenewal, formatLocalDate } from '../utils/dateUtils';
+import { getCurrencySymbol, convertCurrency, detectDefaultCurrency } from '../utils/currencyUtils';
 
 export const AddSubscription: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  const userPreferredCurr = user?.preferredCurrency || detectDefaultCurrency();
 
   const [activeTab, setActiveTab] = useState<'catalog' | 'custom'>('catalog');
   const [catalog, setCatalog] = useState<any[]>([]);
@@ -15,10 +18,10 @@ export const AddSubscription: React.FC = () => {
   const [catalogCategory, setCatalogCategory] = useState('All categories');
 
   // Form fields
-  const [serviceName, setServiceName] = useState('Netflix');
+  const [serviceName, setServiceName] = useState('');
   const [category, setCategory] = useState('Entertainment');
-  const [amount, setAmount] = useState('23.00');
-  const [currency, setCurrency] = useState(user?.preferredCurrency || 'USD');
+  const [amount, setAmount] = useState('');
+  const [currency, setCurrency] = useState(userPreferredCurr);
   const [billingFrequency, setBillingFrequency] = useState('Monthly');
   const [startDate, setStartDate] = useState(formatLocalDate(new Date()));
   const [nextRenewalDate, setNextRenewalDate] = useState(
@@ -29,6 +32,21 @@ export const AddSubscription: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Keep form currency and amounts synced with user's preferred currency once auth loads
+  useEffect(() => {
+    if (user?.preferredCurrency) {
+      setCurrency(user.preferredCurrency);
+      if (selectedCatalogItem) {
+        const converted = convertCurrency(
+          selectedCatalogItem.suggestedPrice,
+          selectedCatalogItem.currency || 'USD',
+          user.preferredCurrency
+        );
+        setAmount(converted.toFixed(2));
+      }
+    }
+  }, [user?.preferredCurrency]);
 
   useEffect(() => {
     loadCatalog();
@@ -55,8 +73,10 @@ export const AddSubscription: React.FC = () => {
     setSelectedCatalogItem(item);
     setServiceName(item.name);
     setCategory(item.category);
-    setAmount(item.suggestedPrice.toFixed(2));
-    setCurrency(item.currency || 'USD');
+    const targetCurrency = user?.preferredCurrency || detectDefaultCurrency();
+    setCurrency(targetCurrency);
+    const converted = convertCurrency(item.suggestedPrice, item.currency || 'USD', targetCurrency);
+    setAmount(converted.toFixed(2));
     const freq = item.billingFrequency || 'Monthly';
     setBillingFrequency(freq);
     setNextRenewalDate(calculateNextRenewal(startDate, freq));
@@ -73,6 +93,7 @@ export const AddSubscription: React.FC = () => {
       setSelectedCatalogItem(null);
       setServiceName('');
       setAmount('');
+      setCurrency(user?.preferredCurrency || detectDefaultCurrency());
     } else if (catalog.length > 0) {
       selectService(catalog[0]);
     }
@@ -176,6 +197,13 @@ export const AddSubscription: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
             {catalog.map((item) => {
               const isSelected = selectedCatalogItem?.name === item.name;
+              const targetCurrency = user?.preferredCurrency || detectDefaultCurrency();
+              const convertedPrice = convertCurrency(
+                item.suggestedPrice,
+                item.currency || 'USD',
+                targetCurrency
+              );
+              const sym = getCurrencySymbol(targetCurrency);
               return (
                 <div
                   key={item.name}
@@ -196,7 +224,7 @@ export const AddSubscription: React.FC = () => {
                     </span>
                   </div>
                   <div className="mt-3 text-xs font-semibold text-[#111827]">
-                    ${item.suggestedPrice} {item.currency} / {item.billingFrequency.toLowerCase()}
+                    {sym}{convertedPrice.toFixed(2)} {targetCurrency} / {item.billingFrequency.toLowerCase()}
                   </div>
                 </div>
               );
