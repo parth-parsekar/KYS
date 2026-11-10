@@ -46,7 +46,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     refreshNotifications();
 
-    const socketInstance = io(window.location.origin, {
+    const socketTarget = import.meta.env.VITE_API_URL
+      ? import.meta.env.VITE_API_URL.replace(/\/+$/, '')
+      : window.location.origin;
+
+    const socketInstance = io(socketTarget, {
       auth: { token },
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 5,

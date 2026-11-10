@@ -19,7 +19,15 @@ export const app = express();
 app.use(helmet());
 
 // CORS & Body parsing
-app.use(cors({ origin: '*', credentials: true }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, or server-to-server) or any origin
+      callback(null, true);
+    },
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: '1mb' }));
 
 // Rate limiter for authentication endpoints to prevent brute-force attacks (disabled in test env)

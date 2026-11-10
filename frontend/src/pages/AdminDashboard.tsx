@@ -37,7 +37,10 @@ export const AdminDashboard: React.FC = () => {
 
   const handleExport = async () => {
     try {
-      const res = await fetch('/api/admin/export', {
+      const apiTarget = import.meta.env.VITE_API_URL
+        ? `${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/admin/export`
+        : '/api/admin/export';
+      const res = await fetch(apiTarget, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('kys_token')}`,
         },
@@ -86,7 +89,9 @@ export const AdminDashboard: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-[#111827]">Admin dashboard</h2>
-          <p className="text-xs md:text-sm text-[#6B7280] mt-1">Authorized administrator · Aggregate platform reporting only.</p>
+          <p className="text-xs md:text-sm text-[#6B7280] mt-1">
+            Administrator: <span className="font-semibold text-[#111827]">{user?.name || adminData.adminUser?.name || 'Parth Parsekar'}</span> ({user?.email || adminData.adminUser?.email || 'admin@kys.app'}) · Real-time platform metrics
+          </p>
         </div>
 
         <div className="flex items-center space-x-3">
@@ -107,12 +112,12 @@ export const AdminDashboard: React.FC = () => {
         <StatCard
           label="Total users"
           value={totalUsers.toLocaleString()}
-          subtext="+124 vs. previous 30 days"
+          subtext={`+${newUsers} in the last 30 days`}
         />
         <StatCard
           label="Active subscriptions"
           value={activeSubscriptions.toLocaleString()}
-          subtext="+286 vs. previous 30 days"
+          subtext={`Across ${categoryDistribution.length} categories`}
         />
         <StatCard
           label="New users"

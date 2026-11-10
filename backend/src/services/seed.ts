@@ -50,13 +50,13 @@ export async function seedInitialData(): Promise<void> {
     console.log('Seeded demo user: alex@example.com / password123');
   }
 
-  // Seed demo Admin Morgan Lee if not exists
+  // Seed demo Admin Parth Parsekar if not exists
   let admin = await User.findOne({ email: 'admin@kys.app' });
   if (!admin) {
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash('admin123', salt);
     admin = await User.create({
-      name: 'Morgan Lee',
+      name: 'Parth Parsekar',
       email: 'admin@kys.app',
       passwordHash: hash,
       role: 'admin',
