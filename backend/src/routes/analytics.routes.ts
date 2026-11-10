@@ -93,11 +93,16 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
       let amount = 0;
       if (eventsInMonth.length > 0) {
         amount = eventsInMonth.reduce((acc, curr) => acc + curr.billingAmount, 0);
-      } else {
+      } else if (user.email === 'alex@example.com') {
         // High fidelity synthetic baseline that gracefully approaches the current active monthly total
-        // to match wireframe 01 & 04 (e.g. from ~180 to ~248)
+        // to match wireframe 01 & 04 (e.g. from ~180 to ~248) exclusively for the wireframe benchmark account
         const factor = 0.75 + (0.25 * (12 - i)) / 12;
         amount = Math.round(totalMonthlySpending * factor * (1 + (Math.sin(i) * 0.04)));
+      } else {
+        // For real and new users: calculate strictly based on subscriptions active during that month
+        const monthEnd = new Date(year, d.getMonth() + 1, 0, 23, 59, 59, 999);
+        const activeInMonth = activeSubs.filter((s) => new Date(s.startDate) <= monthEnd);
+        amount = activeInMonth.reduce((acc, curr) => acc + curr.getMonthlyEquivalent(), 0);
       }
 
       historicalTrends.push({

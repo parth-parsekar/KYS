@@ -55,6 +55,15 @@ export const Dashboard: React.FC = () => {
 
   const { monthlySpending, annualProjection, activeCount, categoriesCount, upcomingRenewals, budget, categoryDistribution, historicalTrends } = analytics;
 
+  const prevMonthSpend = historicalTrends?.length >= 2 ? historicalTrends[historicalTrends.length - 2].amount : 0;
+  const monthDiff = monthlySpending - prevMonthSpend;
+  const monthDiffSubtext =
+    monthDiff > 0
+      ? `+$${monthDiff.toFixed(2)} vs. last month`
+      : monthDiff < 0
+      ? `-$${Math.abs(monthDiff).toFixed(2)} vs. last month`
+      : '$0.00 vs. last month';
+
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
       {/* Title & Action Header */}
@@ -76,7 +85,7 @@ export const Dashboard: React.FC = () => {
         <StatCard
           label="Monthly spending"
           value={`$${monthlySpending.toFixed(2)}`}
-          subtext="+$8 vs. last month"
+          subtext={monthDiffSubtext}
         />
         <StatCard
           label="Annual projection"

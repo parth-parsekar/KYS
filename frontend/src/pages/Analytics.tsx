@@ -143,7 +143,17 @@ export const Analytics: React.FC = () => {
               </ResponsiveContainer>
             </div>
             <p className="text-[11px] text-[#9CA3AF] pt-2">
-              Demo change: +$8 (+3.3%) vs. October
+              {(() => {
+                const prev = historicalTrends?.length >= 2 ? historicalTrends[historicalTrends.length - 2].amount : 0;
+                const prevName = historicalTrends?.length >= 2 ? historicalTrends[historicalTrends.length - 2].month : 'previous month';
+                const diff = monthlySpending - prev;
+                if (prev === 0 && monthlySpending === 0) return 'No spending recorded in previous months.';
+                if (prev === 0) return `Change: +$${diff.toFixed(2)} vs. ${prevName}`;
+                const pct = ((diff / prev) * 100).toFixed(1);
+                return diff >= 0
+                  ? `Change: +$${diff.toFixed(2)} (+${pct}%) vs. ${prevName}`
+                  : `Change: -$${Math.abs(diff).toFixed(2)} (${pct}%) vs. ${prevName}`;
+              })()}
             </p>
           </div>
 
