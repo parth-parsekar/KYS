@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { ConfirmationModal, ModalType } from '../components/ConfirmationModal';
 import { RecordBillingModal } from '../components/RecordBillingModal';
+import { calculateNextRenewal } from '../utils/dateUtils';
 
 export const SubscriptionDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -389,7 +390,13 @@ export const SubscriptionDetails: React.FC = () => {
                 </label>
                 <select
                   value={editFrequency}
-                  onChange={(e) => setEditFrequency(e.target.value)}
+                  onChange={(e) => {
+                    const newFreq = e.target.value;
+                    setEditFrequency(newFreq);
+                    if (editStartDate) {
+                      setEditNextRenewalDate(calculateNextRenewal(editStartDate, newFreq));
+                    }
+                  }}
                   className="w-full text-xs text-[#111827] bg-white border border-[#D1D5DB] rounded-lg px-3 py-2 focus:outline-none focus:border-[#111827]"
                 >
                   <option value="Weekly">Weekly</option>
@@ -424,7 +431,13 @@ export const SubscriptionDetails: React.FC = () => {
                 <input
                   type="date"
                   value={editStartDate}
-                  onChange={(e) => setEditStartDate(e.target.value)}
+                  onChange={(e) => {
+                    const newStart = e.target.value;
+                    setEditStartDate(newStart);
+                    if (newStart) {
+                      setEditNextRenewalDate(calculateNextRenewal(newStart, editFrequency));
+                    }
+                  }}
                   className="w-full text-xs text-[#111827] bg-white border border-[#D1D5DB] rounded-lg px-3 py-2 focus:outline-none focus:border-[#111827]"
                   required
                 />

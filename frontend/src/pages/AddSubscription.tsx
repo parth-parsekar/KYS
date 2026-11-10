@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { calculateNextRenewal, formatLocalDate } from '../utils/dateUtils';
 
 export const AddSubscription: React.FC = () => {
   const navigate = useNavigate();
@@ -19,9 +20,9 @@ export const AddSubscription: React.FC = () => {
   const [amount, setAmount] = useState('23.00');
   const [currency, setCurrency] = useState(user?.preferredCurrency || 'USD');
   const [billingFrequency, setBillingFrequency] = useState('Monthly');
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(formatLocalDate(new Date()));
   const [nextRenewalDate, setNextRenewalDate] = useState(
-    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    calculateNextRenewal(formatLocalDate(new Date()), 'Monthly')
   );
   const [status, setStatus] = useState('Active');
 
@@ -56,17 +57,9 @@ export const AddSubscription: React.FC = () => {
     setCategory(item.category);
     setAmount(item.suggestedPrice.toFixed(2));
     setCurrency(item.currency || 'USD');
-    setBillingFrequency(item.billingFrequency || 'Monthly');
-
-    // Auto set renewal date based on frequency
-    const now = new Date();
-    const renewal = new Date();
-    if (item.billingFrequency === 'Weekly') renewal.setDate(now.getDate() + 7);
-    else if (item.billingFrequency === 'Quarterly') renewal.setMonth(now.getMonth() + 3);
-    else if (item.billingFrequency === 'Yearly') renewal.setFullYear(now.getFullYear() + 1);
-    else renewal.setMonth(now.getMonth() + 1);
-
-    setNextRenewalDate(renewal.toISOString().split('T')[0]);
+    const freq = item.billingFrequency || 'Monthly';
+    setBillingFrequency(freq);
+    setNextRenewalDate(calculateNextRenewal(startDate, freq));
   };
 
   const handleCatalogSearchSubmit = (e: React.FormEvent) => {
@@ -359,7 +352,10 @@ export const AddSubscription: React.FC = () => {
                   <button
                     key={freq}
                     type="button"
-                    onClick={() => setBillingFrequency(freq)}
+                    onClick={() => {
+                      setBillingFrequency(freq);
+                      setNextRenewalDate(calculateNextRenewal(startDate, freq));
+                    }}
                     className={`py-2 text-xs font-medium rounded-lg border transition-all text-center ${
                       billingFrequency === freq
                         ? 'bg-[#18181B] text-white border-[#18181B]'
@@ -381,7 +377,11 @@ export const AddSubscription: React.FC = () => {
                 <input
                   type="date"
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={(e) => {
+                    const newStart = e.target.value;
+                    setStartDate(newStart);
+                    setNextRenewalDate(calculateNextRenewal(newStart, billingFrequency));
+                  }}
                   className="w-full text-xs text-[#111827] bg-white border border-[#D1D5DB] rounded-lg px-3.5 py-2.5 focus:outline-none focus:border-[#111827]"
                   required
                 />
