@@ -4,10 +4,10 @@ import { useAuth } from '../context/AuthContext';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { login, demoLogin } = useAuth();
+  const { login } = useAuth();
 
-  const [email, setEmail] = useState('alex@example.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -20,19 +20,6 @@ export const Login: React.FC = () => {
       navigate('/');
     } catch (err: any) {
       setError(err.message || 'Unable to sign in. Check your details and try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleQuickDemo = async (role: 'user' | 'admin') => {
-    setError('');
-    setLoading(true);
-    try {
-      await demoLogin(role);
-      navigate(role === 'admin' ? '/admin' : '/');
-    } catch (err: any) {
-      setError(err.message || 'Quick demo login failed');
     } finally {
       setLoading(false);
     }
@@ -138,29 +125,6 @@ export const Login: React.FC = () => {
             </button>
           </form>
 
-          {/* Quick Demo Credentials for Evaluation */}
-          <div className="pt-2 border-t border-[#F3F4F6] space-y-2">
-            <span className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider block">
-              Quick demo access
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickDemo('user')}
-                className="py-1.5 px-2 text-xs font-medium text-[#374151] bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg hover:bg-gray-100 text-center"
-              >
-                Alex (User)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemo('admin')}
-                className="py-1.5 px-2 text-xs font-medium text-[#374151] bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg hover:bg-gray-100 text-center"
-              >
-                Morgan (Admin)
-              </button>
-            </div>
-          </div>
-
           <div className="text-center pt-2">
             <Link
               to="/register"
@@ -185,3 +149,4 @@ export const Login: React.FC = () => {
     </div>
   );
 };
+
