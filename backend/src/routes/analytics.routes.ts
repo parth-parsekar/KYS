@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { Subscription } from '../models/Subscription.js';
 import { BillingHistory } from '../models/BillingHistory.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { convertCurrency } from '../services/currency.js';
 
 const router = Router();
 router.use(authenticate);
@@ -14,18 +15,18 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
     const userId = user._id as mongoose.Types.ObjectId;
     const preferredCurrency = user.preferredCurrency || 'USD';
 
-    // 1. Fetch all active subscriptions for the user in preferred currency
+    // 1. Fetch all active subscriptions for the user
     const activeSubs = await Subscription.find({
       user: userId,
       status: 'Active',
-      currency: preferredCurrency,
     });
 
     let totalMonthlySpending = 0;
     const categoryTotals: Record<string, { amount: number; count: number }> = {};
 
     for (const sub of activeSubs) {
-      const monthlyAmt = sub.getMonthlyEquivalent();
+      const origMonthly = sub.getMonthlyEquivalent();
+      const monthlyAmt = convertCurrency(origMonthly, sub.currency, preferredCurrency);
       totalMonthlySpending += monthlyAmt;
 
       if (!categoryTotals[sub.category]) {
@@ -56,7 +57,10 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
       nextRenewalDate: { $gte: startOfToday, $lte: sevenDaysFromNow },
     }).sort({ nextRenewalDate: 1 });
 
-    const upcomingExpenditure = upcomingSubs.reduce((acc, curr) => acc + curr.amount, 0);
+    const upcomingExpenditure = upcomingSubs.reduce(
+      (acc, curr) => acc + convertCurrency(curr.amount, curr.currency, preferredCurrency),
+      0
+    );
 
     // 3. Monthly budget utilization
     const monthlyBudget = user.monthlyBudget || 300;
@@ -71,7 +75,6 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
     const billingEvents = await BillingHistory.find({
       user: userId,
       billingDate: { $gte: twelveMonthsAgo, $lte: now },
-      currency: preferredCurrency,
     });
 
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -92,7 +95,10 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
 
       let amount = 0;
       if (eventsInMonth.length > 0) {
-        amount = eventsInMonth.reduce((acc, curr) => acc + curr.billingAmount, 0);
+        amount = eventsInMonth.reduce(
+          (acc, curr) => acc + convertCurrency(curr.billingAmount, curr.currency, preferredCurrency),
+          0
+        );
       } else if (user.email === 'alex@example.com') {
         // High fidelity synthetic baseline that gracefully approaches the current active monthly total
         // to match wireframe 01 & 04 (e.g. from ~180 to ~248) exclusively for the wireframe benchmark account
@@ -102,7 +108,10 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
         // For real and new users: calculate strictly based on subscriptions active during that month
         const monthEnd = new Date(year, d.getMonth() + 1, 0, 23, 59, 59, 999);
         const activeInMonth = activeSubs.filter((s) => new Date(s.startDate) <= monthEnd);
-        amount = activeInMonth.reduce((acc, curr) => acc + curr.getMonthlyEquivalent(), 0);
+        amount = activeInMonth.reduce(
+          (acc, curr) => acc + convertCurrency(curr.getMonthlyEquivalent(), curr.currency, preferredCurrency),
+          0
+        );
       }
 
       historicalTrends.push({

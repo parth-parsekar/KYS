@@ -37,3 +37,4 @@ export const calculateNextRenewal = (startDateStr: string, frequency: string): s
 
   return formatLocalDate(d);
 };
+

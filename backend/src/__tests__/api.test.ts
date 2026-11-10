@@ -6,6 +6,7 @@ import { app } from '../app.js';
 import { User } from '../models/User.js';
 import { Subscription } from '../models/Subscription.js';
 import { ServiceCatalog } from '../models/ServiceCatalog.js';
+import { convertCurrency } from '../services/currency.js';
 
 let mongod: MongoMemoryServer;
 
@@ -180,5 +181,69 @@ describe('KYS PRD Acceptance Tests', () => {
     expect(adminRes.status).toBe(200);
     expect(adminRes.body.data.totalUsers).toBeDefined();
     expect(adminRes.body.data.activeSubscriptions).toBeDefined();
+  });
+
+  test('7. Validation Edge Cases: Rejects invalid inputs (P1/Resilience)', async () => {
+    // Negative amount
+    const negRes = await request(app)
+      .post('/api/subscriptions')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({
+        serviceName: 'Invalid Price Service',
+        amount: -15,
+        startDate: '2026-11-01',
+        nextRenewalDate: '2026-12-01',
+      });
+    expect(negRes.status).toBe(400);
+    expect(negRes.body.message).toMatch(/greater than zero/i);
+
+    // Missing service name
+    const missingNameRes = await request(app)
+      .post('/api/subscriptions')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({
+        amount: 20,
+        startDate: '2026-11-01',
+        nextRenewalDate: '2026-12-01',
+      });
+    expect(missingNameRes.status).toBe(400);
+
+    // Renewal date prior to start date
+    const badDateRes = await request(app)
+      .post('/api/subscriptions')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({
+        serviceName: 'Time Traveler Service',
+        amount: 10,
+        startDate: '2026-12-01',
+        nextRenewalDate: '2026-11-01',
+      });
+    expect(badDateRes.status).toBe(400);
+    expect(badDateRes.body.message).toMatch(/cannot be before start date/i);
+  });
+
+  test('8. Authentication Resilience: Rejects missing and corrupted tokens (P1/Security)', async () => {
+    const noTokenRes = await request(app).get('/api/subscriptions');
+    expect(noTokenRes.status).toBe(401);
+
+    const badTokenRes = await request(app)
+      .get('/api/subscriptions')
+      .set('Authorization', 'Bearer invalid.token.payload');
+    expect(badTokenRes.status).toBe(401);
+  });
+
+  test('9. Multi-Currency Conversion Resilience (P1/Business Logic)', () => {
+    // USD to EUR ($100 -> €92)
+    expect(convertCurrency(100, 'USD', 'EUR')).toBe(92);
+
+    // EUR to USD (€92 -> ~$100)
+    expect(Math.round(convertCurrency(92, 'EUR', 'USD'))).toBe(100);
+
+    // Same currency identity
+    expect(convertCurrency(50, 'USD', 'USD')).toBe(50);
+
+    // Unknown currency gracefully defaults without throwing
+    expect(convertCurrency(75, 'XYZ', 'USD')).toBe(75);
+    expect(convertCurrency(0, 'USD', 'EUR')).toBe(0);
   });
 });

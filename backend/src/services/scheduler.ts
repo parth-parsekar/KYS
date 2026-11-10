@@ -3,6 +3,7 @@ import { Subscription } from '../models/Subscription.js';
 import { Notification } from '../models/Notification.js';
 import { User } from '../models/User.js';
 import { sendNotificationToUser } from './socket.js';
+import { convertCurrency } from './currency.js';
 
 export async function checkRenewalsAndBudgets(): Promise<{ renewalAlerts: number; budgetAlerts: number }> {
   let renewalAlertsCreated = 0;
@@ -76,16 +77,15 @@ export async function checkRenewalsAndBudgets(): Promise<{ renewalAlerts: number
     for (const user of users) {
       if (!user.monthlyBudget || user.monthlyBudget <= 0) continue;
 
-      // Find all active subscriptions for this user in their preferred currency (or default USD)
+      // Find all active subscriptions for this user
       const userSubs = await Subscription.find({
         user: user._id,
         status: 'Active',
-        currency: user.preferredCurrency || 'USD',
       });
 
       let totalMonthly = 0;
       for (const s of userSubs) {
-        totalMonthly += s.getMonthlyEquivalent();
+        totalMonthly += convertCurrency(s.getMonthlyEquivalent(), s.currency, user.preferredCurrency || 'USD');
       }
 
       const utilization = (totalMonthly / user.monthlyBudget) * 100;

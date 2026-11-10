@@ -3,17 +3,33 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 
 let mongod: MongoMemoryServer | null = null;
 
+// Lifecycle listeners for connection resiliency
+mongoose.connection.on('disconnected', () => {
+  console.warn('[MongoDB Resilience] Connection lost. Buffering queries while awaiting reconnect...');
+});
+
+mongoose.connection.on('reconnected', () => {
+  console.log('[MongoDB Resilience] Successfully reconnected to MongoDB.');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('[MongoDB Resilience] Connection error:', err.message);
+});
+
 export async function connectDB(): Promise<typeof mongoose> {
   const uri = process.env.MONGODB_URI;
 
   if (uri && uri.trim() !== '') {
     try {
       console.log('Connecting to provided MongoDB URI...');
-      await mongoose.connect(uri);
+      await mongoose.connect(uri, {
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+      });
       console.log('MongoDB connected successfully to external instance.');
       return mongoose;
-    } catch (err) {
-      console.warn('Failed to connect to provided MONGODB_URI. Falling back to embedded MongoMemoryServer.', err);
+    } catch (err: any) {
+      console.warn('Failed to connect to provided MONGODB_URI. Falling back to embedded MongoMemoryServer.', err.message || err);
     }
   }
 

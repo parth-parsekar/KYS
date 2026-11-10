@@ -5,6 +5,7 @@ import { SocketProvider } from './context/SocketContext';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { MobileDrawer } from './components/MobileDrawer';
+import { OfflineBanner } from './components/OfflineBanner';
 
 // Pages
 import { Dashboard } from './pages/Dashboard';
@@ -37,23 +38,26 @@ const ProtectedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] flex">
-      {/* Desktop Sidebar (hidden on mobile) */}
-      <div className="hidden md:block w-64 shrink-0">
-        <Sidebar />
-      </div>
+    <div className="min-h-screen bg-[#F8F9FA] flex flex-col">
+      <OfflineBanner />
+      <div className="flex-1 flex">
+        {/* Desktop Sidebar (hidden on mobile) */}
+        <div className="hidden md:block w-64 shrink-0">
+          <Sidebar />
+        </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <Header onOpenMobileMenu={() => setMobileMenuOpen(true)} />
-        <main className="flex-1 pb-16">{children}</main>
-      </div>
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <Header onOpenMobileMenu={() => setMobileMenuOpen(true)} />
+          <main className="flex-1 pb-16">{children}</main>
+        </div>
 
-      {/* Mobile Drawer (matching Screen 23) */}
-      <MobileDrawer
-        isOpen={mobileMenuOpen}
-        onClose={() => setMobileMenuOpen(false)}
-      />
+        {/* Mobile Drawer (matching Screen 23) */}
+        <MobileDrawer
+          isOpen={mobileMenuOpen}
+          onClose={() => setMobileMenuOpen(false)}
+        />
+      </div>
     </div>
   );
 };

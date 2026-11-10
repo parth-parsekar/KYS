@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { Subscription } from '../models/Subscription.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { checkRenewalsAndBudgets } from '../services/scheduler.js';
+import { convertCurrency } from '../services/currency.js';
 
 const router = Router();
 router.use(authenticate);
@@ -10,15 +11,15 @@ router.use(authenticate);
 router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const user = req.user!;
+    const targetCurrency = user.preferredCurrency || 'USD';
     const activeSubs = await Subscription.find({
       user: user._id,
       status: 'Active',
-      currency: user.preferredCurrency || 'USD',
     });
 
     let currentSpend = 0;
     for (const s of activeSubs) {
-      currentSpend += s.getMonthlyEquivalent();
+      currentSpend += convertCurrency(s.getMonthlyEquivalent(), s.currency, targetCurrency);
     }
 
     const limit = user.monthlyBudget || 300;

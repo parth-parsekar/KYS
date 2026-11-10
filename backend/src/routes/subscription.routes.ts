@@ -4,6 +4,7 @@ import { Subscription } from '../models/Subscription.js';
 import { BillingHistory } from '../models/BillingHistory.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { checkRenewalsAndBudgets } from '../services/scheduler.js';
+import { convertCurrency } from '../services/currency.js';
 
 const router = Router();
 router.use(authenticate);
@@ -51,10 +52,11 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
     };
 
     // Calculate active total monthly and annual projection
+    const targetCurrency = req.user!.preferredCurrency || 'USD';
     let activeMonthlyTotal = 0;
     const activeSubs = allUserSubs.filter((s) => s.status === 'Active');
     for (const sub of activeSubs) {
-      activeMonthlyTotal += sub.getMonthlyEquivalent();
+      activeMonthlyTotal += convertCurrency(sub.getMonthlyEquivalent(), sub.currency, targetCurrency);
     }
     const activeAnnualTotal = activeMonthlyTotal * 12;
 

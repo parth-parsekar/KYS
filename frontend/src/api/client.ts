@@ -20,19 +20,31 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     ...options.headers,
   };
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers,
+    });
 
-  const data = await response.json().catch(() => ({}));
+    const data = await response.json().catch(() => ({}));
 
-  if (!response.ok) {
-    const errorMsg = data.message || `Request failed with status ${response.status}`;
-    throw new Error(errorMsg);
+    if (response.status === 401) {
+      setToken(null);
+      window.dispatchEvent(new CustomEvent('kys:session_expired'));
+    }
+
+    if (!response.ok) {
+      const errorMsg = data.message || `Request failed with status ${response.status}`;
+      throw new Error(errorMsg);
+    }
+
+    return data as T;
+  } catch (err: any) {
+    if (err.name === 'TypeError' && err.message?.toLowerCase().includes('fetch')) {
+      throw new Error('Network error. Unable to reach KYS server. Please check your connection.');
+    }
+    throw err;
   }
-
-  return data as T;
 }
 
 export const api = {
