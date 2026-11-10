@@ -1,0 +1,163 @@
+import { Router, Response } from 'express';
+import bcrypt from 'bcryptjs';
+import { User } from '../models/User.js';
+import { authenticate, AuthRequest, generateToken } from '../middleware/auth.js';
+
+const router = Router();
+
+// POST /api/auth/register
+router.post('/register', async (req, res: Response): Promise<void> => {
+  try {
+    const { name, email, password, preferredCurrency, timezone } = req.body;
+
+    if (!name || !email || !password) {
+      res.status(400).json({ success: false, message: 'Please provide full name, email, and password.' });
+      return;
+    }
+
+    if (password.length < 6) {
+      res.status(400).json({ success: false, message: 'Password must be at least 6 characters long.' });
+      return;
+    }
+
+    const existing = await User.findOne({ email: email.toLowerCase().trim() });
+    if (existing) {
+      res.status(400).json({ success: false, message: 'An account with this email already exists.' });
+      return;
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    const user = await User.create({
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      passwordHash,
+      role: 'user',
+      preferredCurrency: preferredCurrency || 'USD',
+      timezone: timezone || 'America/Los_Angeles',
+      monthlyBudget: 300,
+      alertThreshold: 80,
+      notifyOnThreshold: true,
+    });
+
+    const token = generateToken(user);
+    res.status(201).json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        preferredCurrency: user.preferredCurrency,
+        timezone: user.timezone,
+        monthlyBudget: user.monthlyBudget,
+        alertThreshold: user.alertThreshold,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Error registering account' });
+  }
+});
+
+// POST /api/auth/login
+router.post('/login', async (req, res: Response): Promise<void> => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      res.status(400).json({ success: false, message: 'Please provide email and password.' });
+      return;
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      res.status(401).json({ success: false, message: 'The email or password is incorrect. Check your details and try again.' });
+      return;
+    }
+
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) {
+      res.status(401).json({ success: false, message: 'The email or password is incorrect. Check your details and try again.' });
+      return;
+    }
+
+    const token = generateToken(user);
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        preferredCurrency: user.preferredCurrency,
+        timezone: user.timezone,
+        monthlyBudget: user.monthlyBudget,
+        alertThreshold: user.alertThreshold,
+        notifyOnThreshold: user.notifyOnThreshold,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Error signing in' });
+  }
+});
+
+// GET /api/auth/me
+router.get('/me', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  const user = req.user!;
+  res.json({
+    success: true,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      preferredCurrency: user.preferredCurrency,
+      timezone: user.timezone,
+      monthlyBudget: user.monthlyBudget,
+      alertThreshold: user.alertThreshold,
+      notifyOnThreshold: user.notifyOnThreshold,
+    },
+  });
+});
+
+// PUT /api/auth/profile
+router.put('/profile', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = req.user!;
+    const { name, preferredCurrency, timezone, monthlyBudget, alertThreshold, notifyOnThreshold } = req.body;
+
+    if (name) user.name = name.trim();
+    if (preferredCurrency) user.preferredCurrency = preferredCurrency.toUpperCase().trim();
+    if (timezone) user.timezone = timezone.trim();
+    if (typeof monthlyBudget === 'number' && monthlyBudget >= 0) user.monthlyBudget = monthlyBudget;
+    if (typeof alertThreshold === 'number' && alertThreshold >= 1 && alertThreshold <= 100) {
+      user.alertThreshold = alertThreshold;
+    }
+    if (typeof notifyOnThreshold === 'boolean') user.notifyOnThreshold = notifyOnThreshold;
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Preferences updated successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        preferredCurrency: user.preferredCurrency,
+        timezone: user.timezone,
+        monthlyBudget: user.monthlyBudget,
+        alertThreshold: user.alertThreshold,
+        notifyOnThreshold: user.notifyOnThreshold,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Error updating profile' });
+  }
+});
+
+export default router;

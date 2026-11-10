@@ -1,0 +1,262 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { api } from '../api/client';
+import { StatCard } from '../components/StatCard';
+
+export const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [analytics, setAnalytics] = useState<any>(null);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      const res = await api.getAnalytics();
+      if (res.success) {
+        setAnalytics(res.data);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-[400px]">
+        <div className="text-xs text-[#6B7280]">Loading dashboard analytics...</div>
+      </div>
+    );
+  }
+
+  if (error || !analytics) {
+    return (
+      <div className="p-8 max-w-xl mx-auto">
+        <div className="bg-white border border-[#E5E7EB] rounded-xl p-6 text-center space-y-3">
+          <h3 className="text-lg font-bold text-[#111827]">Could not load dashboard</h3>
+          <p className="text-xs text-[#6B7280]">{error || 'Data temporarily unavailable.'}</p>
+          <button
+            onClick={loadDashboardData}
+            className="px-4 py-2 bg-[#18181B] text-white text-xs font-semibold rounded-lg hover:bg-black"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const { monthlySpending, annualProjection, activeCount, categoriesCount, upcomingRenewals, budget, categoryDistribution, historicalTrends } = analytics;
+
+  return (
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+      {/* Title & Action Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-[#111827]">Dashboard</h2>
+          <p className="text-xs md:text-sm text-[#6B7280] mt-1">A clear view of your recurring spending.</p>
+        </div>
+        <button
+          onClick={() => navigate('/add')}
+          className="inline-flex items-center justify-center px-4 py-2.5 bg-[#18181B] text-white text-xs font-medium rounded-lg hover:bg-black transition-colors shadow-sm self-start md:self-auto"
+        >
+          + Add subscription
+        </button>
+      </div>
+
+      {/* 4 Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          label="Monthly spending"
+          value={`$${monthlySpending.toFixed(2)}`}
+          subtext="+$8 vs. last month"
+        />
+        <StatCard
+          label="Annual projection"
+          value={`$${annualProjection.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          subtext="Based on current subscriptions"
+        />
+        <StatCard
+          label="Active subscriptions"
+          value={activeCount}
+          subtext={`Across ${categoriesCount} categories`}
+        />
+        <StatCard
+          label="Upcoming renewals"
+          value={upcomingRenewals.count}
+          subtext="In the next 7 days"
+        />
+      </div>
+
+      {/* Middle Row: Monthly expenditure chart & Monthly budget */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Monthly expenditure Bar Chart (2 cols) */}
+        <div className="lg:col-span-2 bg-white border border-[#E5E7EB] rounded-xl p-6 flex flex-col justify-between">
+          <div className="flex items-center justify-between pb-4">
+            <div>
+              <h3 className="text-sm font-semibold text-[#111827]">Monthly expenditure</h3>
+              <p className="text-xs text-[#6B7280] mt-0.5">Synthetic demo billing events · Not verified payments</p>
+            </div>
+            <div className="text-xs border border-[#E5E7EB] rounded-lg px-3 py-1.5 text-[#374151] bg-[#F9FAFB]">
+              Last 12 months
+            </div>
+          </div>
+
+          <div className="h-64 w-full pt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={historicalTrends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <XAxis dataKey="month" stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
+                <Tooltip
+                  formatter={(val: any) => [`$${val}`, 'Expenditure']}
+                  contentStyle={{ backgroundColor: '#18181B', borderRadius: '8px', color: '#fff', fontSize: '12px', border: 'none' }}
+                />
+                <Bar
+                  dataKey="amount"
+                  fill="#94A3B8"
+                  radius={[4, 4, 0, 0]}
+                  // Highlighting latest bar
+                  shape={(props: any) => {
+                    const { fill, x, y, width, height, index } = props;
+                    const isLast = index === historicalTrends.length - 1;
+                    return <rect x={x} y={y} width={width} height={height} fill={isLast ? '#18181B' : '#94A3B8'} rx={4} ry={4} />;
+                  }}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="text-[11px] text-[#9CA3AF] pt-2">
+            Dec 2025 – Nov 2026
+          </div>
+        </div>
+
+        {/* Monthly budget card (1 col) */}
+        <div className="bg-white border border-[#E5E7EB] rounded-xl p-6 flex flex-col justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-[#111827]">Monthly budget</h3>
+            <div className="mt-4">
+              <span className="text-3xl font-bold text-[#111827]">${Math.round(budget.current)}</span>
+              <span className="text-xs text-[#6B7280] ml-2">of ${budget.limit} budget</span>
+            </div>
+
+            {/* Progress bar */}
+            <div className="mt-5">
+              <div className="w-full bg-[#E5E7EB] rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-[#374151] h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min(100, budget.usedPercentage)}%` }}
+                />
+              </div>
+              <div className="flex justify-between items-center text-xs text-[#6B7280] mt-2 font-medium">
+                <span>{budget.usedPercentage}% used</span>
+                <span>${budget.remaining} remaining</span>
+              </div>
+            </div>
+
+            {budget.thresholdCrossed && (
+              <div className="mt-6 text-xs text-[#4B5563]">
+                {budget.alertThreshold}% budget threshold reached.
+              </div>
+            )}
+          </div>
+
+          <div className="pt-6 border-t border-[#F3F4F6]">
+            <button
+              onClick={() => navigate('/preferences')}
+              className="text-xs font-semibold text-[#111827] hover:underline flex items-center space-x-1"
+            >
+              <span>Manage budget</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Row: Upcoming renewals table & By Category breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Upcoming renewals (2 cols) */}
+        <div className="lg:col-span-2 bg-white border border-[#E5E7EB] rounded-xl p-6">
+          <div className="flex items-center justify-between pb-4 border-b border-[#F3F4F6]">
+            <div>
+              <h3 className="text-sm font-semibold text-[#111827]">Upcoming renewals</h3>
+              <p className="text-xs text-[#6B7280] mt-0.5">Next 7 days · ${upcomingRenewals.totalAmount.toFixed(2)} due</p>
+            </div>
+            <button
+              onClick={() => navigate('/subscriptions')}
+              className="text-xs font-semibold text-[#111827] hover:underline flex items-center space-x-1"
+            >
+              <span>View all</span>
+              <span>→</span>
+            </button>
+          </div>
+
+          <div className="divide-y divide-[#F3F4F6] mt-1">
+            {upcomingRenewals.subscriptions.length === 0 ? (
+              <div className="py-8 text-center text-xs text-[#6B7280]">
+                No renewals in the next 7 days.
+              </div>
+            ) : (
+              upcomingRenewals.subscriptions.map((sub: any) => (
+                <div
+                  key={sub.id}
+                  onClick={() => navigate(`/subscriptions/${sub.id}`)}
+                  className="py-3.5 flex items-center justify-between hover:bg-[#F9FAFB] px-2 rounded-lg cursor-pointer transition-colors"
+                >
+                  <div className="w-1/3">
+                    <span className="text-xs font-semibold text-[#111827]">{sub.serviceName}</span>
+                  </div>
+                  <div className="w-1/3 text-xs text-[#6B7280]">{sub.category}</div>
+                  <div className="w-1/4 text-xs text-[#6B7280]">
+                    {new Date(sub.nextRenewalDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </div>
+                  <div className="text-xs font-semibold text-[#111827] text-right">
+                    ${sub.amount.toFixed(2)}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* By category (1 col) */}
+        <div className="bg-white border border-[#E5E7EB] rounded-xl p-6">
+          <h3 className="text-sm font-semibold text-[#111827] pb-4 border-b border-[#F3F4F6]">By category</h3>
+          <div className="space-y-4 mt-4">
+            {categoryDistribution.map((cat: any) => {
+              const maxSpend = Math.max(...categoryDistribution.map((c: any) => c.amount), 1);
+              const widthPct = Math.round((cat.amount / maxSpend) * 100);
+              return (
+                <div key={cat.category} className="space-y-1.5">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[#374151] font-normal">{cat.category}</span>
+                    <span className="text-[#111827] font-semibold">${Math.round(cat.amount)}</span>
+                  </div>
+                  <div className="w-full bg-[#F3F4F6] rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="bg-[#4B5563] h-1.5 rounded-full"
+                      style={{ width: `${widthPct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer disclaimer matching Screen 01 */}
+      <footer className="pt-4 border-t border-[#E5E7EB] text-center md:text-left">
+        <p className="text-[11px] text-[#9CA3AF]">
+          Demo data · Active subscriptions only · USD totals; other currencies are kept separate · Nov 10, 2026
+        </p>
+      </footer>
+    </div>
+  );
+};

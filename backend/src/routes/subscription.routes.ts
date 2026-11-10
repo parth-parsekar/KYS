@@ -1,0 +1,299 @@
+import { Router, Response } from 'express';
+import mongoose from 'mongoose';
+import { Subscription } from '../models/Subscription.js';
+import { BillingHistory } from '../models/BillingHistory.js';
+import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { checkRenewalsAndBudgets } from '../services/scheduler.js';
+
+const router = Router();
+router.use(authenticate);
+
+// GET /api/subscriptions - List user's subscriptions with filters & active totals
+router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!._id;
+    const { category, frequency, status, search, sort } = req.query;
+
+    const query: any = { user: userId };
+
+    if (category && category !== 'All' && category !== 'All categories') {
+      query.category = category;
+    }
+
+    if (frequency && frequency !== 'All' && frequency !== 'All billing frequencies') {
+      query.billingFrequency = frequency;
+    }
+
+    if (status && status !== 'All') {
+      query.status = status;
+    }
+
+    if (search && typeof search === 'string' && search.trim() !== '') {
+      query.serviceName = { $regex: search.trim(), $options: 'i' };
+    }
+
+    let sortOption: any = { nextRenewalDate: 1 };
+    if (sort === 'amount_asc') sortOption = { amount: 1 };
+    else if (sort === 'amount_desc') sortOption = { amount: -1 };
+    else if (sort === 'name') sortOption = { serviceName: 1 };
+    else if (sort === 'Next renewal' || sort === 'renewal_asc') sortOption = { nextRenewalDate: 1 };
+
+    const subscriptions = await Subscription.find(query).sort(sortOption);
+
+    // Compute status counts across all user subscriptions (independent of status filter)
+    const allUserSubs = await Subscription.find({ user: userId });
+    const counts = {
+      all: allUserSubs.length,
+      active: allUserSubs.filter((s) => s.status === 'Active').length,
+      paused: allUserSubs.filter((s) => s.status === 'Paused').length,
+      cancelled: allUserSubs.filter((s) => s.status === 'Cancelled').length,
+      expired: allUserSubs.filter((s) => s.status === 'Expired').length,
+    };
+
+    // Calculate active total monthly and annual projection
+    let activeMonthlyTotal = 0;
+    const activeSubs = allUserSubs.filter((s) => s.status === 'Active');
+    for (const sub of activeSubs) {
+      activeMonthlyTotal += sub.getMonthlyEquivalent();
+    }
+    const activeAnnualTotal = activeMonthlyTotal * 12;
+
+    res.json({
+      success: true,
+      data: subscriptions,
+      meta: {
+        counts,
+        activeMonthlyTotal: Math.round(activeMonthlyTotal * 100) / 100,
+        activeAnnualTotal: Math.round(activeAnnualTotal * 100) / 100,
+        currency: req.user!.preferredCurrency || 'USD',
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Error fetching subscriptions' });
+  }
+});
+
+// GET /api/subscriptions/:id - Get single subscription with billing history
+router.get('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json({ success: false, message: 'Invalid subscription ID format' });
+      return;
+    }
+
+    const sub = await Subscription.findOne({ _id: id, user: req.user!._id });
+    if (!sub) {
+      res.status(404).json({ success: false, message: 'Subscription not found or unauthorized' });
+      return;
+    }
+
+    const billingEvents = await BillingHistory.find({ subscription: sub._id, user: req.user!._id }).sort({ billingDate: -1 });
+
+    res.json({
+      success: true,
+      subscription: sub,
+      monthlyEquivalent: sub.getMonthlyEquivalent(),
+      billingEvents,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Error fetching subscription' });
+  }
+});
+
+// POST /api/subscriptions - Create new subscription
+router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const {
+      serviceName,
+      category,
+      amount,
+      currency,
+      billingFrequency,
+      startDate,
+      nextRenewalDate,
+      status,
+      customService,
+      notes,
+    } = req.body;
+
+    if (!serviceName || !serviceName.trim()) {
+      res.status(400).json({ success: false, message: 'Service name is required' });
+      return;
+    }
+
+    const numericAmount = parseFloat(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      res.status(400).json({ success: false, message: 'Amount must be greater than zero.' });
+      return;
+    }
+
+    if (!startDate || !nextRenewalDate) {
+      res.status(400).json({ success: false, message: 'Start date and next renewal date are required.' });
+      return;
+    }
+
+    const start = new Date(startDate);
+    const renewal = new Date(nextRenewalDate);
+
+    if (renewal < start) {
+      res.status(400).json({ success: false, message: 'Next renewal date cannot be before start date.' });
+      return;
+    }
+
+    const newSub = await Subscription.create({
+      user: req.user!._id,
+      serviceName: serviceName.trim(),
+      category: category || 'Productivity',
+      amount: numericAmount,
+      currency: currency || req.user!.preferredCurrency || 'USD',
+      billingFrequency: billingFrequency || 'Monthly',
+      startDate: start,
+      nextRenewalDate: renewal,
+      status: status || 'Active',
+      customService: Boolean(customService),
+      notes: notes || '',
+    });
+
+    // Check renewals & budget in background
+    checkRenewalsAndBudgets().catch((e) => console.error(e));
+
+    res.status(201).json({
+      success: true,
+      message: 'Subscription created successfully',
+      subscription: newSub,
+      monthlyEquivalent: newSub.getMonthlyEquivalent(),
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Error creating subscription' });
+  }
+});
+
+// PUT /api/subscriptions/:id - Update subscription
+router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const sub = await Subscription.findOne({ _id: id, user: req.user!._id });
+    if (!sub) {
+      res.status(404).json({ success: false, message: 'Subscription not found or unauthorized' });
+      return;
+    }
+
+    const {
+      serviceName,
+      category,
+      amount,
+      currency,
+      billingFrequency,
+      startDate,
+      nextRenewalDate,
+      status,
+      notes,
+    } = req.body;
+
+    if (serviceName) sub.serviceName = serviceName.trim();
+    if (category) sub.category = category;
+    if (amount !== undefined) {
+      const num = parseFloat(amount);
+      if (isNaN(num) || num <= 0) {
+        res.status(400).json({ success: false, message: 'Amount must be greater than zero.' });
+        return;
+      }
+      sub.amount = num;
+    }
+    if (currency) sub.currency = currency.toUpperCase().trim();
+    if (billingFrequency) sub.billingFrequency = billingFrequency;
+    if (startDate) sub.startDate = new Date(startDate);
+    if (nextRenewalDate) sub.nextRenewalDate = new Date(nextRenewalDate);
+    if (status) sub.status = status;
+    if (notes !== undefined) sub.notes = notes;
+
+    if (sub.nextRenewalDate < sub.startDate) {
+      res.status(400).json({ success: false, message: 'Next renewal date cannot be before start date.' });
+      return;
+    }
+
+    await sub.save();
+
+    // Re-check alerts
+    checkRenewalsAndBudgets().catch((e) => console.error(e));
+
+    res.json({
+      success: true,
+      message: 'Subscription updated successfully',
+      subscription: sub,
+      monthlyEquivalent: sub.getMonthlyEquivalent(),
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Error updating subscription' });
+  }
+});
+
+// PATCH /api/subscriptions/:id/pause
+router.patch('/:id/pause', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const sub = await Subscription.findOne({ _id: req.params.id, user: req.user!._id });
+    if (!sub) {
+      res.status(404).json({ success: false, message: 'Subscription not found' });
+      return;
+    }
+    sub.status = 'Paused';
+    await sub.save();
+    res.json({ success: true, message: 'Subscription paused. Excluded from spending totals and renewal alerts.', subscription: sub });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// PATCH /api/subscriptions/:id/resume
+router.patch('/:id/resume', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const sub = await Subscription.findOne({ _id: req.params.id, user: req.user!._id });
+    if (!sub) {
+      res.status(404).json({ success: false, message: 'Subscription not found' });
+      return;
+    }
+    sub.status = 'Active';
+    if (req.body.nextRenewalDate) {
+      sub.nextRenewalDate = new Date(req.body.nextRenewalDate);
+    }
+    await sub.save();
+    checkRenewalsAndBudgets().catch((e) => console.error(e));
+    res.json({ success: true, message: 'Subscription resumed as Active.', subscription: sub });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// PATCH /api/subscriptions/:id/cancel
+router.patch('/:id/cancel', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const sub = await Subscription.findOne({ _id: req.params.id, user: req.user!._id });
+    if (!sub) {
+      res.status(404).json({ success: false, message: 'Subscription not found' });
+      return;
+    }
+    sub.status = 'Cancelled';
+    await sub.save();
+    res.json({ success: true, message: 'Subscription marked as Cancelled. Excluded from totals.', subscription: sub });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// DELETE /api/subscriptions/:id
+router.delete('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const sub = await Subscription.findOneAndDelete({ _id: req.params.id, user: req.user!._id });
+    if (!sub) {
+      res.status(404).json({ success: false, message: 'Subscription not found' });
+      return;
+    }
+    await BillingHistory.deleteMany({ subscription: sub._id });
+    res.json({ success: true, message: 'Subscription permanently deleted.' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+export default router;
