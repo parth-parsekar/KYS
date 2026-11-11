@@ -45,33 +45,60 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
 
     const subscriptions = await Subscription.find(query).sort(sortOption);
 
-    // Compute status counts across all user subscriptions (independent of status filter)
-    const allUserSubs = await Subscription.find({ user: userId });
+    // Compute contextual status counts matching the active search, category, and frequency filters
+    // This ensures status button counts (All, Active, Paused, etc.) reflect the actual filtered dataset
+    const contextFilter: any = { user: userId };
+    if (category && category !== 'All' && category !== 'All categories') {
+      contextFilter.category = category;
+    }
+    if (frequency && frequency !== 'All' && frequency !== 'All billing frequencies') {
+      contextFilter.billingFrequency = frequency;
+    }
+    if (search && typeof search === 'string' && search.trim() !== '') {
+      contextFilter.serviceName = { $regex: escapeRegex(search.trim()), $options: 'i' };
+    }
+
+    const contextSubs = await Subscription.find(contextFilter);
     const counts = {
-      all: allUserSubs.length,
-      active: allUserSubs.filter((s) => s.status === 'Active').length,
-      paused: allUserSubs.filter((s) => s.status === 'Paused').length,
-      cancelled: allUserSubs.filter((s) => s.status === 'Cancelled').length,
-      expired: allUserSubs.filter((s) => s.status === 'Expired').length,
+      all: contextSubs.length,
+      active: contextSubs.filter((s) => s.status === 'Active').length,
+      paused: contextSubs.filter((s) => s.status === 'Paused').length,
+      cancelled: contextSubs.filter((s) => s.status === 'Cancelled').length,
+      expired: contextSubs.filter((s) => s.status === 'Expired').length,
     };
 
-    // Calculate active total monthly and annual projection
+    // Calculate active total monthly and annual projection for the matching context
     const targetCurrency = req.user!.preferredCurrency || 'USD';
     let activeMonthlyTotal = 0;
-    const activeSubs = allUserSubs.filter((s) => s.status === 'Active');
+    const activeSubs = contextSubs.filter((s) => s.status === 'Active');
     for (const sub of activeSubs) {
       activeMonthlyTotal += convertCurrency(sub.getMonthlyEquivalent(), sub.currency, targetCurrency);
     }
     const activeAnnualTotal = activeMonthlyTotal * 12;
+
+    // Global totals across entire account
+    const allUserSubs = await Subscription.find({ user: userId });
+    let globalActiveMonthly = 0;
+    for (const sub of allUserSubs.filter((s) => s.status === 'Active')) {
+      globalActiveMonthly += convertCurrency(sub.getMonthlyEquivalent(), sub.currency, targetCurrency);
+    }
 
     res.json({
       success: true,
       data: subscriptions,
       meta: {
         counts,
+        totalAccountSubscriptions: allUserSubs.length,
+        hasActiveFilters: Boolean(
+          (category && category !== 'All' && category !== 'All categories') ||
+            (frequency && frequency !== 'All' && frequency !== 'All billing frequencies') ||
+            (status && status !== 'All') ||
+            (search && typeof search === 'string' && search.trim() !== '')
+        ),
         activeMonthlyTotal: Math.round(activeMonthlyTotal * 100) / 100,
         activeAnnualTotal: Math.round(activeAnnualTotal * 100) / 100,
-        currency: req.user!.preferredCurrency || 'USD',
+        globalActiveMonthlyTotal: Math.round(globalActiveMonthly * 100) / 100,
+        currency: targetCurrency,
       },
     });
   } catch (err: any) {

@@ -72,6 +72,21 @@ export const Subscriptions: React.FC = () => {
     }
   };
 
+  const handleResetFilters = () => {
+    setSearch('');
+    setCategory('All categories');
+    setFrequency('All billing frequencies');
+    setSort('Next renewal');
+    setStatusTab('All');
+    setSearchParams({});
+  };
+
+  const hasActiveFilters =
+    category !== 'All categories' ||
+    frequency !== 'All billing frequencies' ||
+    statusTab !== 'All' ||
+    Boolean(search.trim());
+
   const counts = meta?.counts || { all: 0, active: 0, paused: 0, cancelled: 0, expired: 0 };
 
   return (
@@ -181,23 +196,111 @@ export const Subscriptions: React.FC = () => {
         )}
       </div>
 
+      {/* Active filters breadcrumb / reset pill */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center justify-between gap-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg px-4 py-2 text-xs">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[#6B7280] font-medium">Active filters:</span>
+            {category !== 'All categories' && (
+              <span className="inline-flex items-center gap-1 bg-white border border-[#D1D5DB] text-[#111827] px-2 py-0.5 rounded text-[11px] font-medium">
+                {category}
+                <button
+                  type="button"
+                  onClick={() => setCategory('All categories')}
+                  className="hover:text-red-600 font-bold ml-0.5"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {frequency !== 'All billing frequencies' && (
+              <span className="inline-flex items-center gap-1 bg-white border border-[#D1D5DB] text-[#111827] px-2 py-0.5 rounded text-[11px] font-medium">
+                {frequency}
+                <button
+                  type="button"
+                  onClick={() => setFrequency('All billing frequencies')}
+                  className="hover:text-red-600 font-bold ml-0.5"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {statusTab !== 'All' && (
+              <span className="inline-flex items-center gap-1 bg-white border border-[#D1D5DB] text-[#111827] px-2 py-0.5 rounded text-[11px] font-medium">
+                {statusTab}
+                <button
+                  type="button"
+                  onClick={() => setStatusTab('All')}
+                  className="hover:text-red-600 font-bold ml-0.5"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {search.trim() && (
+              <span className="inline-flex items-center gap-1 bg-white border border-[#D1D5DB] text-[#111827] px-2 py-0.5 rounded text-[11px] font-medium">
+                "{search.trim()}"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch('');
+                    setSearchParams({});
+                  }}
+                  className="hover:text-red-600 font-bold ml-0.5"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleResetFilters}
+            className="text-xs font-semibold text-[#111827] hover:underline"
+          >
+            Reset all filters
+          </button>
+        </div>
+      )}
+
       {/* Subscriptions Grid */}
       {loading ? (
         <div className="py-12 text-center text-xs text-[#6B7280]">
           Loading subscriptions...
         </div>
       ) : subscriptions.length === 0 ? (
-        <div className="bg-white border border-[#E5E7EB] rounded-xl p-12 text-center max-w-md mx-auto space-y-3">
-          <h3 className="text-sm font-semibold text-[#111827]">No subscriptions found</h3>
-          <p className="text-xs text-[#6B7280]">
-            Try adjusting your search or filters, or add a new subscription.
-          </p>
-          <button
-            onClick={() => navigate('/add')}
-            className="px-4 py-2 bg-[#18181B] text-white text-xs font-semibold rounded-lg hover:bg-black transition-colors"
-          >
-            Add subscription
-          </button>
+        <div className="bg-white border border-[#E5E7EB] rounded-xl p-10 text-center max-w-lg mx-auto space-y-4">
+          <div className="w-12 h-12 bg-[#F3F4F6] text-[#374151] rounded-full flex items-center justify-center mx-auto text-base font-bold">
+            0
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-[#111827]">
+              {hasActiveFilters ? 'No subscriptions match your filters' : "You haven't added any subscriptions yet"}
+            </h3>
+            <p className="text-xs text-[#6B7280] mt-1">
+              {hasActiveFilters
+                ? 'Try resetting your category, billing frequency or status filters to view other subscriptions.'
+                : 'Track your recurring software, tools and services in one place.'}
+            </p>
+          </div>
+          <div className="flex items-center justify-center gap-2.5 pt-1">
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="px-4 py-2 bg-white border border-[#D1D5DB] text-[#111827] text-xs font-semibold rounded-lg hover:bg-gray-50 transition-colors shadow-xs"
+              >
+                Reset all filters
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => navigate('/add')}
+              className="px-4 py-2 bg-[#18181B] text-white text-xs font-semibold rounded-lg hover:bg-black transition-colors shadow-xs"
+            >
+              + Add subscription
+            </button>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
