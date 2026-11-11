@@ -16,6 +16,7 @@ export const AddSubscription: React.FC = () => {
   const [selectedCatalogItem, setSelectedCatalogItem] = useState<any | null>(null);
   const [catalogSearch, setCatalogSearch] = useState('');
   const [catalogCategory, setCatalogCategory] = useState('All categories');
+  const [mobileViewTab, setMobileViewTab] = useState<'catalog' | 'form'>('catalog');
 
   // Form fields
   const [serviceName, setServiceName] = useState('');
@@ -80,6 +81,7 @@ export const AddSubscription: React.FC = () => {
     const freq = item.billingFrequency || 'Monthly';
     setBillingFrequency(freq);
     setNextRenewalDate(calculateNextRenewal(startDate, freq));
+    setMobileViewTab('form');
   };
 
   const handleCatalogSearchSubmit = (e: React.FormEvent) => {
@@ -89,6 +91,7 @@ export const AddSubscription: React.FC = () => {
 
   const handleTabChange = (tab: 'catalog' | 'custom') => {
     setActiveTab(tab);
+    setMobileViewTab('form');
     if (tab === 'custom') {
       setSelectedCatalogItem(null);
       setServiceName('');
@@ -148,17 +151,43 @@ export const AddSubscription: React.FC = () => {
   };
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* Page Header */}
       <div>
-        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-[#111827]">Add subscription</h2>
-        <p className="text-xs md:text-sm text-[#6B7280] mt-1">Track a new service in just a few steps.</p>
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#111827]">Add subscription</h2>
+        <p className="text-xs sm:text-sm text-[#6B7280] mt-1">Track a new service in just a few steps.</p>
+      </div>
+
+      {/* Mobile Step Switcher (< 1024px) */}
+      <div className="flex lg:hidden bg-[#F3F4F6] p-1 rounded-lg border border-[#E5E7EB]">
+        <button
+          type="button"
+          onClick={() => setMobileViewTab('catalog')}
+          className={`flex-1 text-xs py-2 font-semibold rounded-md transition-all ${
+            mobileViewTab === 'catalog'
+              ? 'bg-white text-[#111827] shadow-xs'
+              : 'text-[#6B7280]'
+          }`}
+        >
+          1. Browse Catalog
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileViewTab('form')}
+          className={`flex-1 text-xs py-2 font-semibold rounded-md transition-all ${
+            mobileViewTab === 'form'
+              ? 'bg-white text-[#111827] shadow-xs'
+              : 'text-[#6B7280]'
+          }`}
+        >
+          2. Confirm & Save {serviceName ? `(${serviceName})` : ''}
+        </button>
       </div>
 
       {/* Main 2-column Layout matching Screen 03 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         {/* Left Column: Quick-add a service */}
-        <div className="bg-white border border-[#E5E7EB] rounded-xl p-6 space-y-5">
+        <div className={`bg-white border border-[#E5E7EB] rounded-xl p-5 sm:p-6 space-y-5 ${mobileViewTab === 'catalog' ? 'block' : 'hidden lg:block'}`}>
           <div>
             <h3 className="text-sm font-bold text-[#111827]">Quick-add a service</h3>
             <p className="text-xs text-[#6B7280] mt-0.5">1. Choose a service · 2. Confirm details · 3. Save</p>
@@ -253,7 +282,7 @@ export const AddSubscription: React.FC = () => {
         </div>
 
         {/* Right Column: Edit / Confirmation form */}
-        <div className="bg-white border border-[#E5E7EB] rounded-xl p-6 space-y-6">
+        <div className={`bg-white border border-[#E5E7EB] rounded-xl p-5 sm:p-6 space-y-6 ${mobileViewTab === 'form' ? 'block' : 'hidden lg:block'}`}>
           {/* Top Toggle Tabs */}
           <div className="flex items-center space-x-2">
             <button

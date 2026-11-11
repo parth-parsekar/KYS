@@ -94,19 +94,19 @@ export const AdminDashboard: React.FC = () => {
   const { totalUsers, activeSubscriptions, newUsers, subsPerUser, trend, categoryDistribution, platformSummary } = adminData;
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* Header matching Screen 06 */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-[#111827]">Admin dashboard</h2>
-          <p className="text-xs md:text-sm text-[#6B7280] mt-1">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#111827]">Admin dashboard</h2>
+          <p className="text-xs sm:text-sm text-[#6B7280] mt-1">
             Administrator: <span className="font-semibold text-[#111827]">{user?.name || adminData.adminUser?.name || 'Parth Parsekar'}</span> ({user?.email || adminData.adminUser?.email || 'admin@kys.app'}) · Real-time platform metrics
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Interactive Timeframe selector */}
-          <div className="flex items-center bg-[#F3F4F6] p-1 rounded-lg border border-[#E5E7EB]">
+          <div className="flex items-center bg-[#F3F4F6] p-1 rounded-lg border border-[#E5E7EB] overflow-x-auto">
             {[
               { id: '30d', label: '30 days' },
               { id: '90d', label: '90 days' },
@@ -138,8 +138,8 @@ export const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 4 Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 4 Stat Cards: 2-col on mobile, 4-col on desktop */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           label="Total users"
           value={totalUsers.toLocaleString()}
@@ -293,8 +293,8 @@ export const AdminDashboard: React.FC = () => {
           Aggregate platform data only · No access to personal spending details
         </p>
 
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        <div className="mt-4 overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
+          <table className="w-full text-left text-xs min-w-[480px]">
             <thead>
               <tr className="border-b border-[#F3F4F6] text-[#6B7280]">
                 <th className="py-3 font-medium">Category</th>

@@ -90,33 +90,33 @@ export const Subscriptions: React.FC = () => {
   const counts = meta?.counts || { all: 0, active: 0, paused: 0, cancelled: 0, expired: 0 };
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-[#111827]">My subscriptions</h2>
-          <p className="text-xs md:text-sm text-[#6B7280] mt-1">All your subscriptions, in one place.</p>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#111827]">My subscriptions</h2>
+          <p className="text-xs sm:text-sm text-[#6B7280] mt-1">All your subscriptions, in one place.</p>
         </div>
-        <div className="flex items-center space-x-2.5 self-start md:self-auto">
+        <div className="flex items-center space-x-2.5 self-start sm:self-auto">
           <button
             onClick={handleExportCsv}
             disabled={isExporting || subscriptions.length === 0}
-            className="inline-flex items-center justify-center px-3.5 py-2.5 bg-white border border-[#D1D5DB] text-[#374151] hover:bg-gray-50 text-xs font-medium rounded-lg transition-colors shadow-sm disabled:opacity-40"
-            title="Download your subscriptions as CSV (PRD 3.4)"
+            className="inline-flex items-center justify-center px-3.5 py-2 bg-white border border-[#D1D5DB] text-[#374151] hover:bg-gray-50 text-xs font-medium rounded-lg transition-colors shadow-xs disabled:opacity-40"
+            title="Download your subscriptions as CSV"
           >
             {isExporting ? 'Exporting...' : '↓ Export CSV'}
           </button>
           <button
             onClick={() => navigate('/add')}
-            className="inline-flex items-center justify-center px-4 py-2.5 bg-[#18181B] text-white text-xs font-medium rounded-lg hover:bg-black transition-colors shadow-sm"
+            className="inline-flex items-center justify-center px-4 py-2 bg-[#18181B] text-white text-xs font-medium rounded-lg hover:bg-black transition-colors shadow-xs"
           >
             + Add subscription
           </button>
         </div>
       </div>
 
-      {/* Filter Row matching wireframe 02 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Filter Row: 1 col on mobile, 2 col on tablet, 4 col on desktop */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
         <form onSubmit={handleSearchSubmit} className="w-full">
           <input
             type="text"
@@ -165,9 +165,9 @@ export const Subscriptions: React.FC = () => {
         </select>
       </div>
 
-      {/* Status Filter Tabs & Active Total Summary */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-        <div className="flex flex-wrap items-center gap-2">
+      {/* Status Filter Tabs (Scrollable on small mobile) & Active Total Summary */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0">
           {[
             { id: 'All', label: `All (${counts.all})` },
             { id: 'Active', label: `Active (${counts.active})` },
@@ -178,9 +178,9 @@ export const Subscriptions: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setStatusTab(tab.id)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
                 statusTab === tab.id
-                  ? 'bg-[#18181B] text-white shadow-sm'
+                  ? 'bg-[#18181B] text-white shadow-xs'
                   : 'bg-white border border-[#E5E7EB] text-[#374151] hover:bg-gray-50'
               }`}
             >
@@ -190,8 +190,8 @@ export const Subscriptions: React.FC = () => {
         </div>
 
         {meta && (
-          <div className="text-xs text-[#6B7280] font-normal">
-            Active total: <span className="font-semibold text-[#111827]">{getCurrencySymbol(meta.currency)}{meta.activeMonthlyTotal} / month</span> · <span className="font-semibold text-[#111827]">{getCurrencySymbol(meta.currency)}{meta.activeAnnualTotal} / year</span>
+          <div className="text-xs text-[#6B7280] font-normal shrink-0">
+            Active: <span className="font-semibold text-[#111827]">{getCurrencySymbol(meta.currency)}{meta.activeMonthlyTotal}/mo</span> · <span className="font-semibold text-[#111827]">{getCurrencySymbol(meta.currency)}{meta.activeAnnualTotal}/yr</span>
           </div>
         )}
       </div>

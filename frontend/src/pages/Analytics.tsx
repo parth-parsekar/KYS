@@ -72,22 +72,22 @@ export const Analytics: React.FC = () => {
   }));
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* Header with Date Range & Currency */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-[#111827]">Analytics</h2>
-          <p className="text-xs md:text-sm text-[#6B7280] mt-1">Understand where your money goes.</p>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#111827]">Analytics</h2>
+          <p className="text-xs sm:text-sm text-[#6B7280] mt-1">Understand where your money goes.</p>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <div className="text-xs bg-white border border-[#E5E7EB] rounded-lg px-3.5 py-2 text-[#374151]">
+        <div className="flex items-center space-x-2 sm:space-x-3 self-start sm:self-auto">
+          <div className="text-xs bg-white border border-[#E5E7EB] rounded-lg px-3 py-2 text-[#374151]">
             Dec 2025 – Nov 2026
           </div>
           <select
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
-            className="text-xs bg-white border border-[#E5E7EB] rounded-lg px-3.5 py-2 text-[#374151] focus:outline-none"
+            className="text-xs bg-white border border-[#E5E7EB] rounded-lg px-3 py-2 text-[#374151] focus:outline-none"
           >
             <option value="USD">USD ($)</option>
             <option value="EUR">EUR (€)</option>
@@ -99,8 +99,8 @@ export const Analytics: React.FC = () => {
         </div>
       </div>
 
-      {/* 4 Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 4 Stat Cards: 2-col on mobile, 4-col on desktop */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           label="Active monthly total"
           value={`${sym}${monthlySpending.toFixed(2)}`}
@@ -225,7 +225,7 @@ export const Analytics: React.FC = () => {
             {/* Horizontal interactive month selector tabs */}
             <div className="pt-4 border-t border-[#F3F4F6] mt-3">
               <p className="text-[11px] font-semibold text-[#4B5563] uppercase tracking-wider mb-2">Select past month to inspect:</p>
-              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+              <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-2 px-2 sm:mx-0 sm:px-0">
                 {data.monthlyBreakdowns?.map((mb: any, idx: number) => {
                   const isSelected = selectedMonthIndex === idx;
                   return (
@@ -339,8 +339,8 @@ export const Analytics: React.FC = () => {
                 </div>
 
                 {/* Subscription items table for this month */}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
+                  <table className="w-full text-left text-xs min-w-[520px]">
                     <thead>
                       <tr className="border-b border-[#F3F4F6] text-[#6B7280]">
                         <th className="py-2.5 font-medium">Service</th>

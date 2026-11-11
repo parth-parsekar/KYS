@@ -42,7 +42,7 @@ export const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] flex flex-col justify-between p-6 md:p-12">
+    <div className="min-h-screen bg-[#F8F9FA] flex flex-col justify-between p-4 sm:p-8 lg:p-12">
       {/* Brand */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-[#111827]">KYS</h1>

@@ -91,17 +91,17 @@ export const PreferencesBudget: React.FC = () => {
   const thresholdCrossed = usedPct >= thresholdNum;
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-[#111827]">Preferences & budget</h2>
-        <p className="text-xs md:text-sm text-[#6B7280] mt-1">Make KYS work for your currency, time zone and budget.</p>
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#111827]">Preferences & budget</h2>
+        <p className="text-xs sm:text-sm text-[#6B7280] mt-1">Make KYS work for your currency, time zone and budget.</p>
       </div>
 
       {/* 2 Column Layout matching Screen 11 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-start">
         {/* Left Column: Account preferences */}
-        <div className="bg-white border border-[#E5E7EB] rounded-xl p-6 space-y-5">
+        <div className="bg-white border border-[#E5E7EB] rounded-xl p-5 sm:p-6 space-y-5">
           <div>
             <h3 className="text-base font-bold text-[#111827]">Account preferences</h3>
           </div>

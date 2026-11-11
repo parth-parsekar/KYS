@@ -27,8 +27,13 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex justify-end md:hidden">
-      <div className="w-full max-w-sm bg-white h-full overflow-y-auto flex flex-col p-6 shadow-2xl">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex justify-end lg:hidden transition-opacity"
+    >
+      <div className="w-full max-w-xs sm:max-w-sm bg-white h-full overflow-y-auto flex flex-col p-6 shadow-2xl animate-in slide-in-from-right duration-200">
         {/* Top bar */}
         <div className="flex items-center justify-between pb-6 border-b border-[#E5E7EB]">
           <h2 className="text-xl font-bold tracking-tight text-[#111827]">KYS</h2>

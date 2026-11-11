@@ -70,23 +70,23 @@ export const Dashboard: React.FC = () => {
       : `${sym}0.00 vs. last month`;
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* Title & Action Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-[#111827]">Dashboard</h2>
-          <p className="text-xs md:text-sm text-[#6B7280] mt-1">A clear view of your recurring spending.</p>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#111827]">Dashboard</h2>
+          <p className="text-xs sm:text-sm text-[#6B7280] mt-1">A clear view of your recurring spending.</p>
         </div>
         <button
           onClick={() => navigate('/add')}
-          className="inline-flex items-center justify-center px-4 py-2.5 bg-[#18181B] text-white text-xs font-medium rounded-lg hover:bg-black transition-colors shadow-sm self-start md:self-auto"
+          className="inline-flex items-center justify-center px-4 py-2.5 bg-[#18181B] text-white text-xs font-medium rounded-lg hover:bg-black transition-colors shadow-xs self-start sm:self-auto"
         >
           + Add subscription
         </button>
       </div>
 
-      {/* 4 Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 4 Stat Cards: 2-column on mobile, 4-column on desktop */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           label="Monthly spending"
           value={`${sym}${monthlySpending.toFixed(2)}`}
@@ -228,17 +228,33 @@ export const Dashboard: React.FC = () => {
                 <div
                   key={sub.id}
                   onClick={() => navigate(`/subscriptions/${sub.id}`)}
-                  className="py-3.5 flex items-center justify-between hover:bg-[#F9FAFB] px-2 rounded-lg cursor-pointer transition-colors"
+                  className="py-3 flex items-center justify-between hover:bg-[#F9FAFB] px-2 rounded-lg cursor-pointer transition-colors"
                 >
-                  <div className="w-1/3">
-                    <span className="text-xs font-semibold text-[#111827]">{sub.serviceName}</span>
+                  {/* Mobile layout (< 640px) matching Screen 13 */}
+                  <div className="flex sm:hidden items-center justify-between w-full">
+                    <div>
+                      <span className="text-xs font-semibold text-[#111827] block">{sub.serviceName}</span>
+                      <span className="text-[11px] text-[#6B7280]">
+                        {sub.category} · {new Date(sub.nextRenewalDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                    </div>
+                    <div className="text-xs font-semibold text-[#111827] text-right">
+                      {getCurrencySymbol(sub.currency)}{sub.amount.toFixed(2)}
+                    </div>
                   </div>
-                  <div className="w-1/3 text-xs text-[#6B7280]">{sub.category}</div>
-                  <div className="w-1/4 text-xs text-[#6B7280]">
-                    {new Date(sub.nextRenewalDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </div>
-                  <div className="text-xs font-semibold text-[#111827] text-right">
-                    {getCurrencySymbol(sub.currency)}{sub.amount.toFixed(2)}
+
+                  {/* Tablet & Desktop layout (>= 640px) */}
+                  <div className="hidden sm:flex items-center justify-between w-full">
+                    <div className="w-1/3">
+                      <span className="text-xs font-semibold text-[#111827]">{sub.serviceName}</span>
+                    </div>
+                    <div className="w-1/3 text-xs text-[#6B7280]">{sub.category}</div>
+                    <div className="w-1/4 text-xs text-[#6B7280]">
+                      {new Date(sub.nextRenewalDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </div>
+                    <div className="text-xs font-semibold text-[#111827] text-right">
+                      {getCurrencySymbol(sub.currency)}{sub.amount.toFixed(2)}
+                    </div>
                   </div>
                 </div>
               ))

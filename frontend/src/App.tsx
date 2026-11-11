@@ -41,8 +41,8 @@ const ProtectedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col">
       <OfflineBanner />
       <div className="flex-1 flex">
-        {/* Desktop Sidebar (hidden on mobile) */}
-        <div className="hidden md:block w-64 shrink-0">
+        {/* Desktop Sidebar (hidden on tablet & mobile, shown on lg screens >= 1024px) */}
+        <div className="hidden lg:block w-64 shrink-0">
           <Sidebar />
         </div>
 
@@ -52,7 +52,7 @@ const ProtectedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
           <main className="flex-1 pb-16">{children}</main>
         </div>
 
-        {/* Mobile Drawer (matching Screen 23) */}
+        {/* Mobile & Tablet Drawer (matching Screen 23) */}
         <MobileDrawer
           isOpen={mobileMenuOpen}
           onClose={() => setMobileMenuOpen(false)}

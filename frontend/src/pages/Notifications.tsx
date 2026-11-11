@@ -43,12 +43,12 @@ export const Notifications: React.FC = () => {
   const readCount = Math.max(0, (data.totalCount || 0) - unreadCount);
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-[#111827]">Notifications</h2>
-          <p className="text-xs md:text-sm text-[#6B7280] mt-1">Stay ahead of your next renewal.</p>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#111827]">Notifications</h2>
+          <p className="text-xs sm:text-sm text-[#6B7280] mt-1">Stay ahead of your next renewal.</p>
         </div>
 
         <button

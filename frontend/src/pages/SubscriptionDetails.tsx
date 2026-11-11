@@ -143,7 +143,7 @@ export const SubscriptionDetails: React.FC = () => {
   const shortId = `KYS-${sub._id.toString().slice(-4).toUpperCase()}`;
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* Page Title */}
       <div>
         <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-[#111827]">Subscription details</h2>
