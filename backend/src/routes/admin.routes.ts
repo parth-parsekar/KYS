@@ -43,10 +43,13 @@ router.get('/dashboard', async (req: AuthRequest, res: Response): Promise<void> 
       const startOfMonth = new Date(year, d.getMonth(), 1, 0, 0, 0, 0);
       const endOfMonth = new Date(year, d.getMonth() + 1, 0, 23, 59, 59, 999);
 
-      const activeCount = await Subscription.countDocuments({
-        startDate: { $lte: endOfMonth },
-        status: { $in: ['Active', 'Paused'] },
-      });
+      const isCurrentMonth = i === 0;
+      const activeCount = isCurrentMonth
+        ? activeSubscriptions
+        : await Subscription.countDocuments({
+            startDate: { $lte: endOfMonth },
+            status: { $in: ['Active', 'Paused'] },
+          });
 
       // Total billing transactions in that month
       const billingsInMonth = await BillingHistory.find({

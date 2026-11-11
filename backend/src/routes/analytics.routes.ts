@@ -171,21 +171,28 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
         }
       }
 
-      let trendAmount = paidTotal > 0 ? paidTotal : pendingTotal;
+      let trendAmount = 0;
 
-      if (eventsInMonth.length > 0) {
-        trendAmount = eventsInMonth.reduce(
-          (acc, curr) => acc + convertCurrency(curr.billingAmount, curr.currency, preferredCurrency),
-          0
-        );
-      } else if (user.email === 'alex@example.com') {
-        const factor = 0.75 + (0.25 * (12 - i)) / 12;
-        trendAmount = Math.round(totalMonthlySpending * factor * (1 + Math.sin(i) * 0.04));
+      if (i === 0) {
+        // Current active month (latest bar): dynamically matches the user's current live active monthly spending
+        trendAmount = totalMonthlySpending;
+        const currentItemsTotal = paidTotal + pendingTotal;
+        if (currentItemsTotal < totalMonthlySpending) {
+          pendingTotal += (totalMonthlySpending - currentItemsTotal);
+        }
       } else {
-        trendAmount = subsActiveInMonth.reduce(
-          (acc, curr) => acc + convertCurrency(curr.getMonthlyEquivalent(), curr.currency, preferredCurrency),
-          0
-        );
+        // Past months: strictly computed from recorded billing events or active subscriptions in that month
+        if (eventsInMonth.length > 0) {
+          trendAmount = eventsInMonth.reduce(
+            (acc, curr) => acc + convertCurrency(curr.billingAmount, curr.currency, preferredCurrency),
+            0
+          );
+        } else {
+          trendAmount = subsActiveInMonth.reduce(
+            (acc, curr) => acc + convertCurrency(curr.getMonthlyEquivalent(), curr.currency, preferredCurrency),
+            0
+          );
+        }
       }
 
       historicalTrends.push({
@@ -195,13 +202,15 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
         amount: Math.round(trendAmount * 100) / 100,
       });
 
+      const totalSpentForMonth = i === 0 ? Math.max(totalMonthlySpending, paidTotal + pendingTotal) : (paidTotal + pendingTotal);
+
       monthlyBreakdowns.push({
         month: mName,
         year,
         label,
         totalPaid: Math.round(paidTotal * 100) / 100,
         totalPending: Math.round(pendingTotal * 100) / 100,
-        totalSpent: Math.round((paidTotal + pendingTotal) * 100) / 100,
+        totalSpent: Math.round(totalSpentForMonth * 100) / 100,
         paidCount: monthItems.filter((m) => m.status === 'Paid').length,
         pendingCount: monthItems.filter((m) => m.status === 'Pending').length,
         items: monthItems,

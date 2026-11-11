@@ -238,6 +238,23 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
       notes: notes || '',
     });
 
+    // Record initial billing event for the newly created subscription
+    try {
+      await BillingHistory.create({
+        user: req.user!._id,
+        subscription: newSub._id,
+        billingDate: start,
+        billingAmount: numericAmount,
+        currency: newSub.currency,
+        eventType: 'First Payment',
+        billingStatus: 'Paid',
+        dataSource: 'Manual entry',
+        notes: `Initial subscription setup for ${newSub.serviceName}`,
+      });
+    } catch (e) {
+      console.warn('Could not record initial billing history event', e);
+    }
+
     // Check renewals & budget in background
     checkRenewalsAndBudgets().catch((e) => console.error(e));
 

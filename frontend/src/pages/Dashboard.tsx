@@ -116,7 +116,7 @@ export const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between pb-4">
             <div>
               <h3 className="text-sm font-semibold text-[#111827]">Monthly expenditure</h3>
-              <p className="text-xs text-[#6B7280] mt-0.5">Synthetic demo billing events · Not verified payments</p>
+              <p className="text-xs text-[#6B7280] mt-0.5">Live subscription commitments & billing history</p>
             </div>
             <div className="text-xs border border-[#E5E7EB] rounded-lg px-3 py-1.5 text-[#374151] bg-[#F9FAFB]">
               Last 12 months
@@ -147,7 +147,9 @@ export const Dashboard: React.FC = () => {
             </ResponsiveContainer>
           </div>
           <div className="text-[11px] text-[#9CA3AF] pt-2">
-            Dec 2025 – Nov 2026
+            {historicalTrends && historicalTrends.length > 0
+              ? `${historicalTrends[0].month} ${historicalTrends[0].year} – ${historicalTrends[historicalTrends.length - 1].month} ${historicalTrends[historicalTrends.length - 1].year}`
+              : 'Last 12 months'}
           </div>
         </div>
 

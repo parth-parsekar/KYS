@@ -82,7 +82,9 @@ export const Analytics: React.FC = () => {
 
         <div className="flex items-center space-x-2 sm:space-x-3 self-start sm:self-auto">
           <div className="text-xs bg-white border border-[#E5E7EB] rounded-lg px-3 py-2 text-[#374151]">
-            Dec 2025 – Nov 2026
+            {historicalTrends && historicalTrends.length > 0
+              ? `${historicalTrends[0].month} ${historicalTrends[0].year} – ${historicalTrends[historicalTrends.length - 1].month} ${historicalTrends[historicalTrends.length - 1].year}`
+              : 'Last 12 months'}
           </div>
           <select
             value={currency}
