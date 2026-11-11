@@ -9,6 +9,10 @@ import { convertCurrency } from '../services/currency.js';
 const router = Router();
 router.use(authenticate);
 
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // GET /api/subscriptions - List user's subscriptions with filters & active totals
 router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -30,7 +34,7 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
     }
 
     if (search && typeof search === 'string' && search.trim() !== '') {
-      query.serviceName = { $regex: search.trim(), $options: 'i' };
+      query.serviceName = { $regex: escapeRegex(search.trim()), $options: 'i' };
     }
 
     let sortOption: any = { nextRenewalDate: 1 };

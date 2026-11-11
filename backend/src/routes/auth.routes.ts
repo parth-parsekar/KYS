@@ -1,9 +1,23 @@
 import { Router, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import rateLimit from 'express-rate-limit';
 import { User } from '../models/User.js';
 import { authenticate, AuthRequest, generateToken } from '../middleware/auth.js';
 
 const router = Router();
+
+const isTest = process.env.NODE_ENV === 'test';
+export const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => isTest,
+  message: {
+    success: false,
+    message: 'Too many login attempts from this IP. Please try again after 15 minutes.',
+  },
+});
 
 // POST /api/auth/register
 router.post('/register', async (req, res: Response): Promise<void> => {
@@ -62,7 +76,7 @@ router.post('/register', async (req, res: Response): Promise<void> => {
 });
 
 // POST /api/auth/login
-router.post('/login', async (req, res: Response): Promise<void> => {
+router.post('/login', loginLimiter, async (req, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
 

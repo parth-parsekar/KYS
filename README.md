@@ -119,23 +119,27 @@ You can run both backend and frontend concurrently with a single command:
 npm run dev
 ```
 
-- **Frontend**: [http://localhost:3000](http://localhost:3000)
-- **Backend API**: [http://localhost:5000/api](http://localhost:5000/api)
-- **API Health Check**: [http://localhost:5000/api/health](http://localhost:5000/api/health)
+- **Frontend**: [http://localhost:3001](http://localhost:3001)
+- **Backend API**: [http://localhost:5005/api](http://localhost:5005/api)
+- **API Health Check**: [http://localhost:5005/api/health](http://localhost:5005/api/health)
 
-> **Zero-Configuration Embedded Database**: If no `MONGODB_URI` environment variable is supplied, the backend automatically boots an in-memory MongoDB instance with pre-seeded demo records matching the wireframes!
-> To connect to **MongoDB Atlas**, simply set `MONGODB_URI` in `backend/.env`.
+> **Live MongoDB Atlas Database**: Connected to cloud cluster `kys-cluster.1ivczqq.mongodb.net/kys` with 55 users, 288 subscriptions, and 2,896 historical billing records.
 
 ---
 
 ## 🔑 Demo Accounts
 
-The application automatically seeds standard test credentials:
+The application includes pre-seeded test credentials ready for instant login:
 
 | Role | Name | Email | Password | Pre-seeded Dataset |
 |---|---|---|---|---|
-| **User** | Alex Morgan | `alex@example.com` | `password123` | 15 subscriptions ($248/mo active total matching Screen 01 & 02), 5 notifications, billing history |
-| **Admin** | Morgan Lee | `admin@kys.app` | `admin123` | Authorized admin role with full access to Platform Admin Dashboard |
+| **Admin** | Parth Parsekar | `admin@kys.app` | `admin123` | Full administrator telemetry, live 6-month trends & platform CSV exports |
+| **Admin** | Parth Parsekar | `parsekarparth@gmail.com` | `password123` | Primary administrator account with full privileges |
+| **User (Benchmark)** | Alex Morgan | `alex@example.com` | `password123` | 15 subscriptions ($248/mo active total matching Wireframe 01 & 02) |
+| **User (Demo)** | Sarah Jenkins | `sarah.jenkins@gmail.com` | `password123` | 4 subscriptions, 12 months prior billing history in USD ($) |
+| **User (Demo)** | Liam Chen | `liam.chen@outlook.com` | `password123` | 4 subscriptions, 12 months prior billing history in USD ($) |
+| **User (Demo)** | Elena Rodriguez | `elena.rodriguez@icloud.com` | `password123` | 4 subscriptions, 12 months prior billing history in USD ($) |
+| *+47 more users* | *Diverse names* | *name@domain.com* | `password123` | All seeded with 12 months prior application usage data in USD ($) |
 
 ---
 

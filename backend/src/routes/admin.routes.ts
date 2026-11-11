@@ -1,39 +1,85 @@
 import { Router, Response } from 'express';
 import { User } from '../models/User.js';
 import { Subscription } from '../models/Subscription.js';
+import { BillingHistory } from '../models/BillingHistory.js';
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
 router.use(authenticate);
 router.use(requireAdmin);
 
-// GET /api/admin/dashboard - 100% Live aggregate platform metrics
+// GET /api/admin/dashboard - 100% Live aggregate platform metrics with interactive timeframe & drilldowns
 router.get('/dashboard', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const { timeframe = '30d' } = req.query;
+
     const totalUsers = await User.countDocuments();
     const activeSubscriptions = await Subscription.countDocuments({ status: 'Active' });
 
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const newUsers = await User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
+    let daysBack = 30;
+    if (timeframe === '90d') daysBack = 90;
+    else if (timeframe === '6m') daysBack = 180;
+    else if (timeframe === '12m') daysBack = 365;
+    else if (timeframe === 'all') daysBack = 3650;
+
+    const periodStartDate = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000);
+    const newUsersInPeriod = await User.countDocuments({ createdAt: { $gte: periodStartDate } });
 
     const subsPerUser =
       totalUsers > 0 ? parseFloat((activeSubscriptions / totalUsers).toFixed(1)) : 0;
 
-    // 6-month historical active subscriptions (June to November 2026)
+    // Determine number of trend months based on timeframe
+    const numTrendMonths = timeframe === '12m' ? 12 : 6;
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const trend = [];
+    const monthlyDrilldown: Record<string, any> = {};
     const now = new Date();
 
-    for (let i = 5; i >= 0; i--) {
+    for (let i = numTrendMonths - 1; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const mName = monthNames[d.getMonth()];
-      const endOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+      const year = d.getFullYear();
+      const monthLabel = `${mName} ${year}`;
+      const startOfMonth = new Date(year, d.getMonth(), 1, 0, 0, 0, 0);
+      const endOfMonth = new Date(year, d.getMonth() + 1, 0, 23, 59, 59, 999);
 
-      const count = await Subscription.countDocuments({
+      const activeCount = await Subscription.countDocuments({
         startDate: { $lte: endOfMonth },
         status: { $in: ['Active', 'Paused'] },
       });
-      trend.push({ month: mName, count });
+
+      // Total billing transactions in that month
+      const billingsInMonth = await BillingHistory.find({
+        billingDate: { $gte: startOfMonth, $lte: endOfMonth },
+      });
+
+      const totalBilled = billingsInMonth
+        .filter((b) => b.billingStatus === 'Paid')
+        .reduce((acc, curr) => acc + curr.billingAmount, 0);
+
+      const totalPending = billingsInMonth
+        .filter((b) => b.billingStatus === 'Pending')
+        .reduce((acc, curr) => acc + curr.billingAmount, 0);
+
+      trend.push({
+        month: mName,
+        year,
+        label: monthLabel,
+        count: activeCount,
+        volume: Math.round(totalBilled * 100) / 100,
+        pendingVolume: Math.round(totalPending * 100) / 100,
+      });
+
+      monthlyDrilldown[mName] = {
+        month: mName,
+        year,
+        activeSubscriptions: activeCount,
+        paidVolume: Math.round(totalBilled * 100) / 100,
+        pendingVolume: Math.round(totalPending * 100) / 100,
+        totalEvents: billingsInMonth.length,
+        paidEvents: billingsInMonth.filter((b) => b.billingStatus === 'Paid').length,
+        pendingEvents: billingsInMonth.filter((b) => b.billingStatus === 'Pending').length,
+      };
     }
 
     // Category distribution grouped from live active subscriptions
@@ -73,11 +119,13 @@ router.get('/dashboard', async (req: AuthRequest, res: Response): Promise<void> 
     res.json({
       success: true,
       data: {
+        timeframe,
         totalUsers,
         activeSubscriptions,
-        newUsers,
+        newUsers: newUsersInPeriod,
         subsPerUser,
         trend,
+        monthlyDrilldown,
         categoryDistribution,
         platformSummary,
         adminUser: {

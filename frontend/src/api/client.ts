@@ -191,6 +191,11 @@ export const api = {
     }),
 
   // Admin
-  getAdminDashboard: () => request<{ success: boolean; data: any }>('/admin/dashboard'),
+  getAdminDashboard: (params?: { timeframe?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.timeframe) query.append('timeframe', params.timeframe);
+    const qs = query.toString();
+    return request<{ success: boolean; data: any }>(`/admin/dashboard${qs ? `?${qs}` : ''}`);
+  },
 };
 

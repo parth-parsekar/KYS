@@ -24,6 +24,8 @@ export const Analytics: React.FC = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currency, setCurrency] = useState('USD');
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(null);
+  const [itemStatusFilter, setItemStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
 
   useEffect(() => {
     loadAnalytics();
@@ -36,6 +38,9 @@ export const Analytics: React.FC = () => {
       if (res.success) {
         setData(res.data);
         if (res.data.currency) setCurrency(res.data.currency);
+        if (res.data.monthlyBreakdowns && res.data.monthlyBreakdowns.length > 0) {
+          setSelectedMonthIndex(res.data.monthlyBreakdowns.length - 1);
+        }
       }
     } finally {
       setLoading(false);
@@ -162,14 +167,30 @@ export const Analytics: React.FC = () => {
             </p>
           </div>
 
-          {/* Monthly expenditure (Bar Chart) */}
+          {/* Monthly expenditure (Bar Chart) - Interactive */}
           <div className="bg-white border border-[#E5E7EB] rounded-xl p-6">
-            <h3 className="text-sm font-semibold text-[#111827]">Monthly expenditure</h3>
-            <p className="text-xs text-[#6B7280] mt-0.5">Synthetic demo billing events · {currency} · Dec 2025 – Nov 2026</p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-semibold text-[#111827]">Monthly expenditure</h3>
+                <p className="text-xs text-[#6B7280] mt-0.5">Click any month bar to inspect its paid vs. pending subscriptions</p>
+              </div>
+              <span className="text-[11px] font-medium text-[#4B5563] bg-[#F3F4F6] px-2.5 py-1 rounded-md self-start sm:self-auto">
+                Interactive historical explorer
+              </span>
+            </div>
 
             <div className="h-60 w-full pt-4">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={historicalTrends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <BarChart
+                  data={historicalTrends}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                  onClick={(state: any) => {
+                    if (state && typeof state.activeTooltipIndex === 'number') {
+                      setSelectedMonthIndex(state.activeTooltipIndex);
+                    }
+                  }}
+                  className="cursor-pointer"
+                >
                   <XAxis dataKey="month" stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `${sym}${v}`} />
                   <Tooltip
@@ -178,20 +199,209 @@ export const Analytics: React.FC = () => {
                   />
                   <Bar
                     dataKey="amount"
-                    fill="#94A3B8"
                     shape={(props: any) => {
                       const { x, y, width, height, index } = props;
+                      const isSelected = selectedMonthIndex === index;
                       const isLast = index === historicalTrends.length - 1;
-                      return <rect x={x} y={y} width={width} height={height} fill={isLast ? '#18181B' : '#94A3B8'} rx={3} ry={3} />;
+                      return (
+                        <rect
+                          x={x}
+                          y={y}
+                          width={width}
+                          height={height}
+                          fill={isSelected ? '#18181B' : isLast ? '#374151' : '#94A3B8'}
+                          stroke={isSelected ? '#000000' : 'none'}
+                          strokeWidth={isSelected ? 2 : 0}
+                          rx={3}
+                          ry={3}
+                        />
+                      );
                     }}
                   />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <p className="text-[11px] text-[#9CA3AF] pt-2">
-              Demo totals are illustrative, not actual payment history.
-            </p>
+
+            {/* Horizontal interactive month selector tabs */}
+            <div className="pt-4 border-t border-[#F3F4F6] mt-3">
+              <p className="text-[11px] font-semibold text-[#4B5563] uppercase tracking-wider mb-2">Select past month to inspect:</p>
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+                {data.monthlyBreakdowns?.map((mb: any, idx: number) => {
+                  const isSelected = selectedMonthIndex === idx;
+                  return (
+                    <button
+                      key={mb.label}
+                      type="button"
+                      onClick={() => setSelectedMonthIndex(idx)}
+                      className={`text-[11px] font-medium px-2.5 py-1 rounded-md whitespace-nowrap transition-all border ${
+                        isSelected
+                          ? 'bg-[#18181B] text-white border-[#18181B] shadow-sm'
+                          : 'bg-white text-[#4B5563] border-[#E5E7EB] hover:bg-gray-50'
+                      }`}
+                    >
+                      {mb.month} {mb.year.toString().slice(-2)}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
+
+          {/* Interactive Historical Month Detail Card */}
+          {selectedMonthIndex !== null && data.monthlyBreakdowns && data.monthlyBreakdowns[selectedMonthIndex] && (() => {
+            const currentMonthData = data.monthlyBreakdowns[selectedMonthIndex];
+            const filteredItems = currentMonthData.items?.filter((item: any) => {
+              if (itemStatusFilter === 'paid') return item.status === 'Paid';
+              if (itemStatusFilter === 'pending') return item.status === 'Pending' || item.status === 'Scheduled';
+              return true;
+            }) || [];
+
+            return (
+              <div className="bg-white border border-[#E5E7EB] rounded-xl p-6 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F3F4F6] pb-4">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-base font-bold text-[#111827]">
+                        {currentMonthData.label} Detailed Breakdown
+                      </h3>
+                      <span className="text-[11px] bg-gray-100 text-[#374151] px-2 py-0.5 rounded font-medium">
+                        {currentMonthData.items?.length || 0} subscriptions
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#6B7280] mt-0.5">
+                      Review paid cycles and pending/upcoming subscriptions for this period
+                    </p>
+                  </div>
+
+                  {/* Filter tabs: All, Paid, Pending */}
+                  <div className="flex items-center space-x-1.5 bg-[#F9FAFB] p-1 rounded-lg border border-[#E5E7EB] self-start sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={() => setItemStatusFilter('all')}
+                      className={`text-xs px-2.5 py-1 rounded-md transition-all font-medium ${
+                        itemStatusFilter === 'all'
+                          ? 'bg-white text-[#111827] shadow-xs'
+                          : 'text-[#6B7280] hover:text-[#111827]'
+                      }`}
+                    >
+                      All ({currentMonthData.items?.length || 0})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setItemStatusFilter('paid')}
+                      className={`text-xs px-2.5 py-1 rounded-md transition-all font-medium ${
+                        itemStatusFilter === 'paid'
+                          ? 'bg-emerald-50 text-emerald-800 shadow-xs'
+                          : 'text-[#6B7280] hover:text-[#111827]'
+                      }`}
+                    >
+                      Paid ({currentMonthData.paidCount || 0})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setItemStatusFilter('pending')}
+                      className={`text-xs px-2.5 py-1 rounded-md transition-all font-medium ${
+                        itemStatusFilter === 'pending'
+                          ? 'bg-amber-50 text-amber-800 shadow-xs'
+                          : 'text-[#6B7280] hover:text-[#111827]'
+                      }`}
+                    >
+                      Pending ({currentMonthData.pendingCount || 0})
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3 Summary Pills */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="p-3.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg">
+                    <span className="text-[11px] font-medium text-[#6B7280]">Total Paid in {currentMonthData.month}</span>
+                    <p className="text-lg font-bold text-emerald-700 mt-0.5">
+                      {sym}{currentMonthData.totalPaid.toFixed(2)}
+                    </p>
+                    <span className="text-[10px] text-[#9CA3AF]">{currentMonthData.paidCount} fulfilled payments</span>
+                  </div>
+
+                  <div className="p-3.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg">
+                    <span className="text-[11px] font-medium text-[#6B7280]">Pending / Due</span>
+                    <p className="text-lg font-bold text-amber-700 mt-0.5">
+                      {sym}{currentMonthData.totalPending.toFixed(2)}
+                    </p>
+                    <span className="text-[10px] text-[#9CA3AF]">{currentMonthData.pendingCount} pending or scheduled</span>
+                  </div>
+
+                  <div className="p-3.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg">
+                    <span className="text-[11px] font-medium text-[#6B7280]">Total Monthly Commitment</span>
+                    <p className="text-lg font-bold text-[#111827] mt-0.5">
+                      {sym}{currentMonthData.totalSpent.toFixed(2)}
+                    </p>
+                    <span className="text-[10px] text-[#9CA3AF]">Paid + Pending equivalents</span>
+                  </div>
+                </div>
+
+                {/* Subscription items table for this month */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-[#F3F4F6] text-[#6B7280]">
+                        <th className="py-2.5 font-medium">Service</th>
+                        <th className="py-2.5 font-medium">Category</th>
+                        <th className="py-2.5 font-medium">Billing cycle</th>
+                        <th className="py-2.5 font-medium">Billing date</th>
+                        <th className="py-2.5 font-medium">Status</th>
+                        <th className="py-2.5 font-medium text-right">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#F3F4F6]">
+                      {filteredItems.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="py-6 text-center text-xs text-[#9CA3AF]">
+                            No {itemStatusFilter === 'all' ? '' : itemStatusFilter} subscription items recorded for {currentMonthData.label}.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredItems.map((item: any, idx: number) => {
+                          const isPaid = item.status === 'Paid';
+                          const isPending = item.status === 'Pending';
+                          return (
+                            <tr key={`${item.id}-${idx}`} className="hover:bg-gray-50/50 transition-colors">
+                              <td className="py-3 font-semibold text-[#111827]">
+                                {item.serviceName}
+                              </td>
+                              <td className="py-3 text-[#4B5563]">{item.category}</td>
+                              <td className="py-3 text-[#6B7280]">{item.billingFrequency}</td>
+                              <td className="py-3 text-[#6B7280]">
+                                {new Date(item.billingDate).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                })}
+                              </td>
+                              <td className="py-3">
+                                <span
+                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                    isPaid
+                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                      : isPending
+                                      ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                      : 'bg-gray-100 text-gray-700 border border-gray-200'
+                                  }`}
+                                >
+                                  {item.status}
+                                </span>
+                              </td>
+                              <td className="py-3 text-right font-semibold text-[#111827]">
+                                {sym}{item.convertedAmount ? item.convertedAmount.toFixed(2) : item.amount.toFixed(2)}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Right Column (1 col) */}

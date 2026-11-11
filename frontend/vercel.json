@@ -1,13 +1,9 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "https://kys-backend.onrender.com/api/$1"
-    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
 }
-

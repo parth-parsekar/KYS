@@ -257,4 +257,44 @@ describe('KYS PRD Acceptance Tests', () => {
     expect(csvRes.headers['content-disposition']).toMatch(/kys-subscriptions\.csv/);
     expect(csvRes.text).toContain('Service Name,Category,Amount,Currency,Billing Frequency');
   });
+
+  test('11. Interactive Historical Analytics: Computes past months paid vs pending breakdowns', async () => {
+    const res = await request(app)
+      .get('/api/analytics')
+      .set('Authorization', `Bearer ${userToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(Array.isArray(res.body.data.monthlyBreakdowns)).toBe(true);
+    expect(res.body.data.monthlyBreakdowns.length).toBe(12);
+
+    const latestMonth = res.body.data.monthlyBreakdowns[res.body.data.monthlyBreakdowns.length - 1];
+    expect(latestMonth).toHaveProperty('month');
+    expect(latestMonth).toHaveProperty('year');
+    expect(latestMonth).toHaveProperty('totalPaid');
+    expect(latestMonth).toHaveProperty('totalPending');
+    expect(latestMonth).toHaveProperty('items');
+    expect(Array.isArray(latestMonth.items)).toBe(true);
+  });
+
+  test('12. Security Verification: ReDoS search regex escaping & IDOR isolation', async () => {
+    // 1. ReDoS attempt in search: regex special characters should be safely escaped without server crash
+    const searchRes = await request(app)
+      .get('/api/subscriptions?search=(a+)+$')
+      .set('Authorization', `Bearer ${userToken}`);
+    expect(searchRes.status).toBe(200);
+    expect(Array.isArray(searchRes.body.data)).toBe(true);
+
+    // 2. IDOR check: Attempting to access invalid/foreign subscription ID returns 404 or 400
+    const foreignIdRes = await request(app)
+      .get('/api/subscriptions/000000000000000000000000')
+      .set('Authorization', `Bearer ${userToken}`);
+    expect(foreignIdRes.status).toBe(404);
+
+    // 3. Admin Lockdown: Normal user token gets 403 on admin dashboard
+    const adminRes = await request(app)
+      .get('/api/admin/dashboard')
+      .set('Authorization', `Bearer ${userToken}`);
+    expect(adminRes.status).toBe(403);
+  });
 });

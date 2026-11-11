@@ -181,12 +181,19 @@ export const Dashboard: React.FC = () => {
             )}
           </div>
 
-          <div className="pt-6 border-t border-[#F3F4F6]">
+          <div className="pt-6 border-t border-[#F3F4F6] flex items-center justify-between">
             <button
               onClick={() => navigate('/preferences')}
               className="text-xs font-semibold text-[#111827] hover:underline flex items-center space-x-1"
             >
               <span>Manage budget</span>
+              <span>→</span>
+            </button>
+            <button
+              onClick={() => navigate('/analytics')}
+              className="text-xs font-semibold text-[#4B5563] hover:text-[#111827] flex items-center space-x-1"
+            >
+              <span>Past months & pending</span>
               <span>→</span>
             </button>
           </div>

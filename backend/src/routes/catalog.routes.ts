@@ -3,6 +3,10 @@ import { ServiceCatalog } from '../models/ServiceCatalog.js';
 
 const router = Router();
 
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // GET /api/catalog
 router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
@@ -14,7 +18,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     }
 
     if (search && typeof search === 'string' && search.trim() !== '') {
-      filter.name = { $regex: search.trim(), $options: 'i' };
+      filter.name = { $regex: escapeRegex(search.trim()), $options: 'i' };
     }
 
     const services = await ServiceCatalog.find(filter).sort({ name: 1 });

@@ -11,6 +11,8 @@ export const AdminDashboard: React.FC = () => {
 
   const [loading, setLoading] = useState(true);
   const [adminData, setAdminData] = useState<any>(null);
+  const [timeframe, setTimeframe] = useState('30d');
+  const [selectedAdminMonth, setSelectedAdminMonth] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -18,21 +20,29 @@ export const AdminDashboard: React.FC = () => {
       navigate('/empty-states?reason=admin-required');
       return;
     }
-    loadAdminDashboard();
+    loadAdminDashboard('30d');
   }, [user]);
 
-  const loadAdminDashboard = async () => {
+  const loadAdminDashboard = async (tf: string = timeframe) => {
     try {
       setLoading(true);
-      const res = await api.getAdminDashboard();
+      const res = await api.getAdminDashboard({ timeframe: tf });
       if (res.success) {
         setAdminData(res.data);
+        if (res.data.trend && res.data.trend.length > 0) {
+          setSelectedAdminMonth(res.data.trend[res.data.trend.length - 1].month);
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Access denied or error loading admin dashboard');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleTimeframeChange = (newTf: string) => {
+    setTimeframe(newTf);
+    loadAdminDashboard(newTf);
   };
 
   const handleExport = async () => {
@@ -94,13 +104,34 @@ export const AdminDashboard: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <div className="text-xs bg-white border border-[#E5E7EB] rounded-lg px-3.5 py-2 text-[#374151]">
-            Last 30 days
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Interactive Timeframe selector */}
+          <div className="flex items-center bg-[#F3F4F6] p-1 rounded-lg border border-[#E5E7EB]">
+            {[
+              { id: '30d', label: '30 days' },
+              { id: '90d', label: '90 days' },
+              { id: '6m', label: '6 months' },
+              { id: '12m', label: '12 months' },
+              { id: 'all', label: 'All time' },
+            ].map((tf) => (
+              <button
+                key={tf.id}
+                type="button"
+                onClick={() => handleTimeframeChange(tf.id)}
+                className={`text-xs px-2.5 py-1 rounded-md transition-all font-medium ${
+                  timeframe === tf.id
+                    ? 'bg-white text-[#111827] shadow-xs'
+                    : 'text-[#6B7280] hover:text-[#111827]'
+                }`}
+              >
+                {tf.label}
+              </button>
+            ))}
           </div>
+
           <button
             onClick={handleExport}
-            className="text-xs font-semibold text-[#111827] bg-white border border-[#D1D5DB] rounded-lg px-3.5 py-2 hover:bg-gray-50 transition-colors"
+            className="text-xs font-semibold text-[#111827] bg-white border border-[#D1D5DB] rounded-lg px-3.5 py-2 hover:bg-gray-50 transition-colors shadow-xs"
           >
             Export data
           </button>
@@ -112,7 +143,7 @@ export const AdminDashboard: React.FC = () => {
         <StatCard
           label="Total users"
           value={totalUsers.toLocaleString()}
-          subtext={`+${newUsers} in the last 30 days`}
+          subtext={`+${newUsers} in the selected period`}
         />
         <StatCard
           label="Active subscriptions"
@@ -122,25 +153,43 @@ export const AdminDashboard: React.FC = () => {
         <StatCard
           label="New users"
           value={newUsers}
-          subtext="Joined in the last 30 days"
+          subtext={`Joined in selected period (${timeframe})`}
         />
         <StatCard
           label="Subscriptions per user"
           value={subsPerUser}
-          subtext="Average across all users"
+          subtext="Platform-wide average"
         />
       </div>
 
-      {/* Middle Row: Active Subscriptions 6-month chart & Platform Summary */}
+      {/* Middle Row: Active Subscriptions 6/12-month chart & Platform Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left (2 cols) */}
         <div className="lg:col-span-2 bg-white border border-[#E5E7EB] rounded-xl p-6">
-          <h3 className="text-sm font-semibold text-[#111827]">Active subscriptions</h3>
-          <p className="text-xs text-[#6B7280] mt-0.5">Platform-wide totals · Last 6 months</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-[#111827]">Active subscriptions</h3>
+              <p className="text-xs text-[#6B7280] mt-0.5">Click any month bar to inspect platform volume</p>
+            </div>
+            {selectedAdminMonth && (
+              <span className="text-xs font-medium text-[#111827] bg-[#F3F4F6] px-2.5 py-1 rounded-md">
+                Selected: {selectedAdminMonth}
+              </span>
+            )}
+          </div>
 
           <div className="h-64 w-full pt-4">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={trend} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <BarChart
+                data={trend}
+                margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                onClick={(state: any) => {
+                  if (state && state.activeLabel) {
+                    setSelectedAdminMonth(state.activeLabel);
+                  }
+                }}
+                className="cursor-pointer"
+              >
                 <XAxis dataKey="month" stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} />
                 <Tooltip
@@ -149,16 +198,64 @@ export const AdminDashboard: React.FC = () => {
                 />
                 <Bar
                   dataKey="count"
-                  fill="#94A3B8"
                   shape={(props: any) => {
-                    const { x, y, width, height, index } = props;
-                    const isLast = index === trend.length - 1;
-                    return <rect x={x} y={y} width={width} height={height} fill={isLast ? '#18181B' : '#94A3B8'} rx={3} ry={3} />;
+                    const { x, y, width, height, payload } = props;
+                    const isSelected = selectedAdminMonth === payload?.month;
+                    return (
+                      <rect
+                        x={x}
+                        y={y}
+                        width={width}
+                        height={height}
+                        fill={isSelected ? '#18181B' : '#94A3B8'}
+                        stroke={isSelected ? '#000000' : 'none'}
+                        strokeWidth={isSelected ? 2 : 0}
+                        rx={3}
+                        ry={3}
+                      />
+                    );
                   }}
                 />
               </BarChart>
             </ResponsiveContainer>
           </div>
+
+          {/* Reactive Month Telemetry Drilldown Box */}
+          {selectedAdminMonth && adminData.monthlyDrilldown?.[selectedAdminMonth] && (
+            <div className="mt-4 pt-4 border-t border-[#F3F4F6] space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#111827]">
+                  {selectedAdminMonth} Platform Telemetry
+                </span>
+                <span className="text-[11px] text-[#6B7280]">
+                  {adminData.monthlyDrilldown[selectedAdminMonth].totalEvents} billing events recorded
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                <div className="bg-[#F9FAFB] p-3 rounded-lg border border-[#E5E7EB]">
+                  <span className="text-[11px] text-[#6B7280]">Paid Transaction Volume</span>
+                  <p className="text-base font-bold text-emerald-700 mt-0.5">
+                    ${adminData.monthlyDrilldown[selectedAdminMonth].paidVolume.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </p>
+                  <span className="text-[10px] text-[#9CA3AF]">{adminData.monthlyDrilldown[selectedAdminMonth].paidEvents} fulfilled payments</span>
+                </div>
+                <div className="bg-[#F9FAFB] p-3 rounded-lg border border-[#E5E7EB]">
+                  <span className="text-[11px] text-[#6B7280]">Pending / Due Volume</span>
+                  <p className="text-base font-bold text-amber-700 mt-0.5">
+                    ${adminData.monthlyDrilldown[selectedAdminMonth].pendingVolume.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </p>
+                  <span className="text-[10px] text-[#9CA3AF]">{adminData.monthlyDrilldown[selectedAdminMonth].pendingEvents} pending transactions</span>
+                </div>
+                <div className="bg-[#F9FAFB] p-3 rounded-lg border border-[#E5E7EB]">
+                  <span className="text-[11px] text-[#6B7280]">Active Services Tracked</span>
+                  <p className="text-base font-bold text-[#111827] mt-0.5">
+                    {adminData.monthlyDrilldown[selectedAdminMonth].activeSubscriptions.toLocaleString()}
+                  </p>
+                  <span className="text-[10px] text-[#9CA3AF]">Platform-wide in this month</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right (1 col): Platform summary */}
