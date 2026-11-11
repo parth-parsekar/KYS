@@ -28,7 +28,11 @@ export async function connectDB(): Promise<typeof mongoose> {
       console.log('MongoDB connected successfully to external instance.');
       return mongoose;
     } catch (err: any) {
-      console.warn('Failed to connect to provided MONGODB_URI. Falling back to embedded MongoMemoryServer.', err.message || err);
+      console.error('[MongoDB Error] Failed to connect to provided MONGODB_URI:', err.message || err);
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error(`MongoDB connection failed in production: ${err.message || err}`);
+      }
+      console.warn('Falling back to embedded MongoMemoryServer for local development.');
     }
   }
 
