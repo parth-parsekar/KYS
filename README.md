@@ -30,38 +30,6 @@ A modern, privacy-focused subscription management and spending intelligence web 
 - [Node.js](https://nodejs.org/) (v18 or higher)
 - [MongoDB](https://www.mongodb.com/) (Local instance or MongoDB Atlas)
 
-### Installation
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/parth-parsekar/KYS.git
-   cd KYS
-   ```
-
-2. **Install dependencies**:
-   ```bash
-   npm run install:all
-   ```
-
-3. **Configure environment variables**:
-   Create a `.env` file in the `backend/` directory:
-   ```env
-   PORT=5005
-   MONGODB_URI=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret_key
-   CLIENT_URL=http://localhost:3000
-   ```
-
-4. **Start the application**:
-   ```bash
-   npm run dev
-   ```
-
-   - **Web App**: `http://localhost:3000`
-   - **Backend API**: `http://localhost:5005/api`
-
----
-
 ## Deployment
 
 - **Frontend**: Ready for deployment on [Vercel](https://vercel.com/) with single-page application routing (`frontend/vercel.json`).
