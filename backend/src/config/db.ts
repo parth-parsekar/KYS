@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 
-let mongod: MongoMemoryServer | null = null;
+let mongod: any = null;
 
 // Lifecycle listeners for connection resiliency
 mongoose.connection.on('disconnected', () => {
@@ -34,11 +33,17 @@ export async function connectDB(): Promise<typeof mongoose> {
   }
 
   console.log('Starting in-memory MongoDB server for zero-configuration operation...');
-  mongod = await MongoMemoryServer.create();
-  const memUri = mongod.getUri();
-  await mongoose.connect(memUri);
-  console.log(`In-memory MongoDB connected at ${memUri}`);
-  return mongoose;
+  try {
+    // @ts-ignore
+    const { MongoMemoryServer } = await import('mongodb-memory-server');
+    mongod = await MongoMemoryServer.create();
+    const memUri = mongod.getUri();
+    await mongoose.connect(memUri);
+    console.log(`In-memory MongoDB connected at ${memUri}`);
+    return mongoose;
+  } catch (memErr) {
+    throw new Error('No MONGODB_URI provided and in-memory MongoDB is not available in production.');
+  }
 }
 
 export async function disconnectDB(): Promise<void> {
