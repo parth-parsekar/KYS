@@ -60,6 +60,7 @@ export async function seedInitialData(): Promise<void> {
       email: 'admin@kys.app',
       passwordHash: hash,
       role: 'admin',
+      approvalStatus: 'approved',
       preferredCurrency: 'USD',
       timezone: 'America/Los_Angeles',
       monthlyBudget: 500,
@@ -68,6 +69,13 @@ export async function seedInitialData(): Promise<void> {
     });
     console.log('Seeded demo admin: admin@kys.app / admin123');
   }
+
+  // Ensure all existing users and admins are approved
+  await User.updateMany(
+    { $or: [{ approvalStatus: { $exists: false } }, { approvalStatus: null }] },
+    { $set: { approvalStatus: 'approved' } }
+  );
+  await User.updateMany({ role: 'admin' }, { $set: { approvalStatus: 'approved' } });
 
   // Check if Alex has subscriptions seeded
   const alexSubsCount = await Subscription.countDocuments({ user: alex._id });

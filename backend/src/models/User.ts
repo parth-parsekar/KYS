@@ -5,6 +5,7 @@ export interface IUser extends Document {
   email: string;
   passwordHash: string;
   role: 'user' | 'admin';
+  approvalStatus: 'pending' | 'approved' | 'rejected';
   preferredCurrency: string;
   timezone: string;
   monthlyBudget: number;
@@ -20,6 +21,12 @@ const UserSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
+    approvalStatus: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending',
+      index: true,
+    },
     preferredCurrency: { type: String, default: 'USD', uppercase: true, trim: true },
     timezone: { type: String, default: 'America/Los_Angeles', trim: true },
     monthlyBudget: { type: Number, default: 300, min: 0 },

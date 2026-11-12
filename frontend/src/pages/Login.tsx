@@ -86,8 +86,21 @@ export const Login: React.FC = () => {
           </div>
 
           {error && (
-            <div className="p-3 bg-red-50 text-red-700 text-xs rounded-lg border border-red-200">
-              {error}
+            <div
+              className={`p-3.5 text-xs rounded-lg border ${
+                error.toLowerCase().includes('waitlist') || error.toLowerCase().includes('approval')
+                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                  : 'bg-red-50 text-red-700 border-red-200'
+              }`}
+            >
+              <div className="flex items-start gap-2">
+                <span className="shrink-0 text-sm">
+                  {error.toLowerCase().includes('waitlist') || error.toLowerCase().includes('approval')
+                    ? '⏳'
+                    : '⚠️'}
+                </span>
+                <span className="leading-relaxed">{error}</span>
+              </div>
             </div>
           )}
 

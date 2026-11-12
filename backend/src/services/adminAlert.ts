@@ -3,7 +3,7 @@ import { User } from '../models/User.js';
 import { getSocketIO } from './socket.js';
 
 interface AdminAlertParams {
-  type: 'security_access' | 'unpaid_subscription';
+  type: 'security_access' | 'unpaid_subscription' | 'new_user_registration';
   title: string;
   message: string;
   metadata?: Record<string, any>;
@@ -57,3 +57,4 @@ export async function notifyAdmins(params: AdminAlertParams): Promise<void> {
     console.warn('Failed to notify admins:', err);
   }
 }
+

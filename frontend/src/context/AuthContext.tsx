@@ -6,6 +6,7 @@ export interface User {
   name: string;
   email: string;
   role: 'user' | 'admin';
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
   preferredCurrency: string;
   timezone: string;
   monthlyBudget: number;
@@ -18,7 +19,7 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (payload: { name: string; email: string; password: string; preferredCurrency?: string; timezone?: string }) => Promise<void>;
+  register: (payload: { name: string; email: string; password: string; preferredCurrency?: string; timezone?: string }) => Promise<{ success: boolean; pendingApproval?: boolean; message?: string }>;
   demoLogin: (role: 'user' | 'admin') => Promise<void>;
   logout: () => void;
   updateProfile: (profile: Partial<User>) => Promise<void>;
@@ -83,9 +84,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const res = await api.register(payload);
-      setToken(res.token);
-      setTokenState(res.token);
-      setUser(res.user);
+      if (res.token) {
+        setToken(res.token);
+        setTokenState(res.token);
+        setUser(res.user);
+      }
+      return res;
     } finally {
       setIsLoading(false);
     }

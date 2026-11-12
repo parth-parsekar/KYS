@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { User } from '../models/User.js';
 import { Subscription } from '../models/Subscription.js';
 import { BillingHistory } from '../models/BillingHistory.js';
+import { Notification } from '../models/Notification.js';
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
@@ -14,6 +15,7 @@ router.get('/dashboard', async (req: AuthRequest, res: Response): Promise<void> 
     const { timeframe = '30d' } = req.query;
 
     const totalUsers = await User.countDocuments();
+    const pendingWaitlistCount = await User.countDocuments({ approvalStatus: 'pending' });
     const activeSubscriptions = await Subscription.countDocuments({ status: 'Active' });
 
     let daysBack = 30;
@@ -124,6 +126,7 @@ router.get('/dashboard', async (req: AuthRequest, res: Response): Promise<void> 
       data: {
         timeframe,
         totalUsers,
+        pendingWaitlistCount,
         activeSubscriptions,
         newUsers: newUsersInPeriod,
         subsPerUser,
@@ -150,6 +153,7 @@ router.get('/export', async (req: AuthRequest, res: Response): Promise<void> => 
   try {
     const today = new Date().toISOString().split('T')[0];
     const totalUsers = await User.countDocuments();
+    const pendingWaitlistCount = await User.countDocuments({ approvalStatus: 'pending' });
     const activeSubscriptions = await Subscription.countDocuments({ status: 'Active' });
     const subsPerUser =
       totalUsers > 0 ? parseFloat((activeSubscriptions / totalUsers).toFixed(1)) : 0;
@@ -203,6 +207,102 @@ router.get('/export', async (req: AuthRequest, res: Response): Promise<void> => 
     res.status(200).send(csvContent);
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/admin/waitlist - List users awaiting approval
+router.get('/waitlist', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const pendingUsers = await User.find({ approvalStatus: 'pending' })
+      .select('name email role approvalStatus createdAt updatedAt')
+      .sort({ createdAt: -1 });
+
+    const recentUsers = await User.find()
+      .select('name email role approvalStatus createdAt updatedAt')
+      .sort({ createdAt: -1 })
+      .limit(30);
+
+    res.json({
+      success: true,
+      count: pendingUsers.length,
+      waitlist: pendingUsers,
+      recentUsers,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Error fetching waitlist' });
+  }
+});
+
+// PATCH /api/admin/users/:id/approve - Approve user registration
+router.patch('/users/:id/approve', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      res.status(404).json({ success: false, message: 'User not found' });
+      return;
+    }
+
+    user.approvalStatus = 'approved';
+    await user.save();
+
+    // Create a welcoming system notification for the approved user
+    try {
+      await Notification.create({
+        user: user._id,
+        type: 'system',
+        title: 'Account Approved! 🎉',
+        message: 'Your registration request has been approved by the administrator. Welcome to KYS!',
+      });
+    } catch (e) {
+      console.warn('Could not create approval notification:', e);
+    }
+
+    res.json({
+      success: true,
+      message: `Account for ${user.name} (${user.email}) has been approved.`,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        approvalStatus: user.approvalStatus,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Error approving user' });
+  }
+});
+
+// PATCH /api/admin/users/:id/reject - Reject user registration
+router.patch('/users/:id/reject', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      res.status(404).json({ success: false, message: 'User not found' });
+      return;
+    }
+
+    if (user.role === 'admin') {
+      res.status(400).json({ success: false, message: 'Cannot reject an administrator account.' });
+      return;
+    }
+
+    user.approvalStatus = 'rejected';
+    await user.save();
+
+    res.json({
+      success: true,
+      message: `Account for ${user.name} (${user.email}) has been rejected.`,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        approvalStatus: user.approvalStatus,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Error rejecting user' });
   }
 });
 

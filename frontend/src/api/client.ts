@@ -58,7 +58,7 @@ export const api = {
     }),
 
   register: (payload: { name: string; email: string; password: string; preferredCurrency?: string; timezone?: string }) =>
-    request<{ success: boolean; token: string; user: any }>('/auth/register', {
+    request<{ success: boolean; token?: string; pendingApproval?: boolean; message?: string; user: any }>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
@@ -197,5 +197,18 @@ export const api = {
     const qs = query.toString();
     return request<{ success: boolean; data: any }>(`/admin/dashboard${qs ? `?${qs}` : ''}`);
   },
+
+  getAdminWaitlist: () =>
+    request<{ success: boolean; count: number; waitlist: any[]; recentUsers: any[] }>('/admin/waitlist'),
+
+  approveUser: (id: string) =>
+    request<{ success: boolean; message: string; user: any }>(`/admin/users/${id}/approve`, {
+      method: 'PATCH',
+    }),
+
+  rejectUser: (id: string) =>
+    request<{ success: boolean; message: string; user: any }>(`/admin/users/${id}/reject`, {
+      method: 'PATCH',
+    }),
 };
 

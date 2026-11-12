@@ -49,6 +49,7 @@ router.post('/register', async (req, res: Response): Promise<void> => {
       email: email.toLowerCase().trim(),
       passwordHash,
       role: 'user',
+      approvalStatus: 'pending',
       preferredCurrency: preferredCurrency || 'USD',
       timezone: timezone || 'America/Los_Angeles',
       monthlyBudget: 300,
@@ -56,15 +57,24 @@ router.post('/register', async (req, res: Response): Promise<void> => {
       notifyOnThreshold: true,
     });
 
-    const token = generateToken(user);
+    // Alert administrators in real-time about new registration on the waitlist
+    notifyAdmins({
+      type: 'new_user_registration',
+      title: 'New User Registration (Waitlist)',
+      message: `${user.name} (${user.email}) has registered and is awaiting administrator approval.`,
+      metadata: { userId: user._id, name: user.name, email: user.email },
+    }).catch((e) => console.warn(e));
+
     res.status(201).json({
       success: true,
-      token,
+      pendingApproval: true,
+      message: 'Registration successful! Your account is on the waitlist awaiting administrator approval.',
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
+        approvalStatus: user.approvalStatus,
         preferredCurrency: user.preferredCurrency,
         timezone: user.timezone,
         monthlyBudget: user.monthlyBudget,
@@ -114,6 +124,27 @@ router.post('/login', loginLimiter, async (req, res: Response): Promise<void> =>
       return;
     }
 
+    // Waitlist approval gatekeeper
+    const status = user.approvalStatus || 'approved';
+    if (user.role !== 'admin') {
+      if (status === 'pending') {
+        res.status(403).json({
+          success: false,
+          code: 'PENDING_APPROVAL',
+          message: 'Your account is currently on the waitlist awaiting administrator approval. You will receive access once approved.',
+        });
+        return;
+      }
+      if (status === 'rejected') {
+        res.status(403).json({
+          success: false,
+          code: 'REJECTED',
+          message: 'Your registration request has been declined by the platform administrator.',
+        });
+        return;
+      }
+    }
+
     const token = generateToken(user);
     res.json({
       success: true,
@@ -145,6 +176,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response): Promise
       name: user.name,
       email: user.email,
       role: user.role,
+      approvalStatus: user.approvalStatus || 'approved',
       preferredCurrency: user.preferredCurrency,
       timezone: user.timezone,
       monthlyBudget: user.monthlyBudget,
