@@ -126,7 +126,15 @@ export const Notifications: React.FC = () => {
                         </div>
 
                         <div className="flex items-center justify-between pt-1 border-t border-[#F3F4F6] text-xs">
-                          {notif.subscription ? (
+                          {notif.metadata?.adminAlert ? (
+                            <button
+                              onClick={() => navigate('/admin')}
+                              className="font-medium text-[#111827] hover:underline flex items-center space-x-1"
+                            >
+                              <span>Open admin dashboard</span>
+                              <span>→</span>
+                            </button>
+                          ) : notif.subscription ? (
                             <button
                               onClick={() => navigate(`/subscriptions/${notif.subscription}`)}
                               className="font-medium text-[#111827] hover:underline flex items-center space-x-1"
@@ -190,7 +198,15 @@ export const Notifications: React.FC = () => {
                         </div>
 
                         <div className="flex items-center justify-between pt-1 border-t border-[#F3F4F6] text-xs">
-                          {notif.subscription ? (
+                          {notif.metadata?.adminAlert ? (
+                            <button
+                              onClick={() => navigate('/admin')}
+                              className="font-medium text-[#111827] hover:underline flex items-center space-x-1"
+                            >
+                              <span>Open admin dashboard</span>
+                              <span>→</span>
+                            </button>
+                          ) : notif.subscription ? (
                             <button
                               onClick={() => navigate(`/subscriptions/${notif.subscription}`)}
                               className="font-medium text-[#111827] hover:underline flex items-center space-x-1"

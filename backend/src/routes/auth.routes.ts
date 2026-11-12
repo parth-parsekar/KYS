@@ -99,12 +99,16 @@ router.post('/login', loginLimiter, async (req, res: Response): Promise<void> =>
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
       const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
-      notifyAdmins({
-        type: 'security_access',
-        title: 'Security Alert: Failed Login (Non-existent Account)',
-        message: `Failed sign-in attempt for non-existent email "${email.toLowerCase().trim()}" from IP ${clientIp}.`,
-        metadata: { attemptedEmail: email, ip: clientIp },
-      }).catch((e) => console.warn(e));
+      try {
+        await notifyAdmins({
+          type: 'security_access',
+          title: 'Security Alert: Failed Login (Non-existent Account)',
+          message: `Failed sign-in attempt for non-existent email "${email.toLowerCase().trim()}" from IP ${clientIp}.`,
+          metadata: { attemptedEmail: email, ip: clientIp },
+        });
+      } catch (e) {
+        console.warn('Could not record security alert for non-existent user:', e);
+      }
 
       res.status(401).json({ success: false, message: 'The email or password is incorrect. Check your details and try again.' });
       return;
@@ -113,12 +117,16 @@ router.post('/login', loginLimiter, async (req, res: Response): Promise<void> =>
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
       const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
-      notifyAdmins({
-        type: 'security_access',
-        title: `Security Alert: Failed Login (${user.role === 'admin' ? 'ADMIN Account' : 'User Account'})`,
-        message: `Failed password attempt for ${user.email} (${user.name}) from IP ${clientIp}.`,
-        metadata: { attemptedEmail: user.email, userId: user._id, role: user.role, ip: clientIp },
-      }).catch((e) => console.warn(e));
+      try {
+        await notifyAdmins({
+          type: 'security_access',
+          title: `Security Alert: Failed Login (${user.role === 'admin' ? 'ADMIN Account' : 'User Account'})`,
+          message: `Failed password attempt for ${user.email} (${user.name}) from IP ${clientIp}.`,
+          metadata: { attemptedEmail: user.email, userId: user._id, role: user.role, ip: clientIp },
+        });
+      } catch (e) {
+        console.warn('Could not record security alert for incorrect password:', e);
+      }
 
       res.status(401).json({ success: false, message: 'The email or password is incorrect. Check your details and try again.' });
       return;

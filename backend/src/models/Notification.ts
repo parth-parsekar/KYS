@@ -34,9 +34,13 @@ const NotificationSchema = new Schema<INotification>(
 );
 
 // Compound index to guarantee uniqueness of renewal notification per cycle
+// Uses partialFilterExpression so documents without renewalCycleIdentifier (like security alerts) are never restricted
 NotificationSchema.index(
   { user: 1, renewalCycleIdentifier: 1 },
-  { unique: true, sparse: true }
+  {
+    unique: true,
+    partialFilterExpression: { renewalCycleIdentifier: { $type: 'string' } },
+  }
 );
 
 export const Notification = mongoose.model<INotification>('Notification', NotificationSchema);
