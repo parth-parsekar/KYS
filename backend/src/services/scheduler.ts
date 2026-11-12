@@ -4,6 +4,7 @@ import { Notification } from '../models/Notification.js';
 import { User } from '../models/User.js';
 import { sendNotificationToUser } from './socket.js';
 import { convertCurrency, getCurrencySymbol } from './currency.js';
+import { notifyAdmins } from './adminAlert.js';
 
 export async function checkRenewalsAndBudgets(): Promise<{ renewalAlerts: number; budgetAlerts: number }> {
   let renewalAlertsCreated = 0;
@@ -126,6 +127,38 @@ export async function checkRenewalsAndBudgets(): Promise<{ renewalAlerts: number
           });
         }
       }
+    }
+
+    // 3. Check Overdue / Unpaid Subscriptions & Alert Admins
+    // Subscriptions that are Active but whose nextRenewalDate is in the past by > 1 day
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const overdueSubscriptions = await Subscription.find({
+      status: 'Active',
+      nextRenewalDate: { $lt: oneDayAgo },
+    }).populate('user');
+
+    for (const overdueSub of overdueSubscriptions) {
+      const u = overdueSub.user as any;
+      if (!u) continue;
+      const dueDateStr = overdueSub.nextRenewalDate.toISOString().split('T')[0];
+      const adminDedupId = `admin_overdue_${overdueSub._id}_${dueDateStr}`;
+
+      await notifyAdmins({
+        type: 'unpaid_subscription',
+        title: `Overdue Subscription: ${overdueSub.serviceName}`,
+        message: `Subscription ${overdueSub.serviceName} (${getCurrencySymbol(overdueSub.currency)}${overdueSub.amount.toFixed(2)} ${overdueSub.currency}) for user ${u.name || 'User'} (${u.email}) was due on ${dueDateStr} and remains unpaid.`,
+        metadata: {
+          subscriptionId: overdueSub._id,
+          serviceName: overdueSub.serviceName,
+          amount: overdueSub.amount,
+          currency: overdueSub.currency,
+          nextRenewalDate: overdueSub.nextRenewalDate,
+          userId: u._id,
+          userEmail: u.email,
+          userName: u.name,
+        },
+        dedupIdentifier: adminDedupId,
+      });
     }
   } catch (err) {
     console.error('Error during scheduled renewal and budget check:', err);

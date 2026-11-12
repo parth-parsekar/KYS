@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { BillingHistory } from '../models/BillingHistory.js';
 import { Subscription } from '../models/Subscription.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { notifyAdmins } from '../services/adminAlert.js';
 
 const router = Router();
 router.use(authenticate);
@@ -51,6 +52,24 @@ router.post('/:subscriptionId', async (req: AuthRequest, res: Response): Promise
       dataSource: 'user-entered',
       notes: notes || '',
     });
+
+    if (billingStatus === 'Failed') {
+      await notifyAdmins({
+        type: 'unpaid_subscription',
+        title: `Payment Failed: ${sub.serviceName}`,
+        message: `Payment of ${num.toFixed(2)} ${currency || sub.currency} failed for ${sub.serviceName} (User: ${req.user!.name} · ${req.user!.email}).`,
+        metadata: {
+          subscriptionId: sub._id,
+          serviceName: sub.serviceName,
+          amount: num,
+          currency: currency || sub.currency,
+          userId: req.user!._id,
+          userEmail: req.user!.email,
+          userName: req.user!.name,
+        },
+        dedupIdentifier: `failed_billing_${event._id}`,
+      });
+    }
 
     res.status(201).json({ success: true, message: 'Billing event recorded successfully', event });
   } catch (err: any) {

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User, IUser } from '../models/User.js';
+import { notifyAdmins } from '../services/adminAlert.js';
 
 export interface AuthRequest extends Request {
   user?: IUser;
@@ -38,6 +39,20 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
 
 export function requireAdmin(req: AuthRequest, res: Response, next: NextFunction): void {
   if (!req.user || req.user.role !== 'admin') {
+    const attemptedEmail = req.user?.email || 'unauthenticated';
+    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+    notifyAdmins({
+      type: 'security_access',
+      title: 'Security Alert: Unauthorized Admin Access Attempt',
+      message: `Unauthorized attempt to access admin route (${req.originalUrl || req.url}) by ${attemptedEmail} from IP ${clientIp}.`,
+      metadata: {
+        attemptedEmail,
+        route: req.originalUrl || req.url,
+        ip: clientIp,
+        userId: req.user?._id,
+      },
+    }).catch((e) => console.warn(e));
+
     res.status(403).json({ success: false, message: 'Admin access required. Your account does not have administrator privileges.' });
     return;
   }
