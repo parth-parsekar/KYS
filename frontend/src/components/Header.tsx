@@ -41,7 +41,7 @@ export const Header: React.FC<HeaderProps> = ({ breadcrumb, onOpenMobileMenu }) 
   };
 
   const getShortName = () => {
-    if (!user?.name) return 'Parth P. (Admin)';
+    if (!user?.name) return user?.role === 'admin' ? 'Admin' : 'Workspace';
     const parts = user.name.split(' ');
     const formatted = parts.length > 1 ? `${parts[0]} ${parts[1][0]}.` : parts[0];
     return user?.role === 'admin' ? `${formatted} (Admin)` : formatted;

@@ -26,6 +26,7 @@ export const AdminDashboard: React.FC = () => {
   const loadAdminDashboard = async (tf: string = timeframe) => {
     try {
       setLoading(true);
+      setError('');
       const res = await api.getAdminDashboard({ timeframe: tf });
       if (res.success) {
         setAdminData(res.data);
@@ -77,16 +78,31 @@ export const AdminDashboard: React.FC = () => {
   }
 
   if (error || !adminData) {
+    const isActuallyAdmin = user?.role === 'admin';
     return (
       <div className="p-8 max-w-md mx-auto text-center space-y-4">
-        <h3 className="text-base font-bold text-[#111827]">Admin access required</h3>
-        <p className="text-xs text-[#6B7280]">{error || 'Your account does not have the Admin role.'}</p>
-        <button
-          onClick={() => navigate('/')}
-          className="px-4 py-2 bg-[#18181B] text-white text-xs font-semibold rounded-lg"
-        >
-          Back to dashboard
-        </button>
+        <h3 className="text-base font-bold text-[#111827]">
+          {isActuallyAdmin ? 'Unable to load admin metrics' : 'Admin access required'}
+        </h3>
+        <p className="text-xs text-[#6B7280]">
+          {error || (isActuallyAdmin ? 'Connecting to live platform services...' : 'Your account does not have administrator privileges.')}
+        </p>
+        <div className="flex items-center justify-center gap-3 pt-2">
+          {isActuallyAdmin && (
+            <button
+              onClick={() => loadAdminDashboard(timeframe)}
+              className="px-4 py-2 bg-[#18181B] text-white text-xs font-semibold rounded-lg hover:bg-black transition-colors"
+            >
+              Try again
+            </button>
+          )}
+          <button
+            onClick={() => navigate('/')}
+            className="px-4 py-2 bg-white text-[#111827] border border-[#D1D5DB] text-xs font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Back to dashboard
+          </button>
+        </div>
       </div>
     );
   }
