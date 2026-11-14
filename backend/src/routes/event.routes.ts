@@ -60,7 +60,6 @@ router.post('/', requireAdmin, async (req: AuthRequest, res: Response): Promise<
       await Notification.insertMany(notifications);
     }
 
-    // Broadcast real-time notification to all connected clients
     const payload = {
       id: newEvent._id.toString(),
       type: 'event:created',
@@ -70,9 +69,10 @@ router.post('/', requireAdmin, async (req: AuthRequest, res: Response): Promise<
       event: populatedEvent,
     };
 
-    sendNotificationToAllUsers(payload);
-    const io = getSocketIO();
+    // Broadcast real-time notification to all connected clients using req.app.get('io')
+    const io = req.app.get('io') || getSocketIO();
     if (io) {
+      io.emit('notification:new', payload);
       io.emit('event:created', populatedEvent);
     }
 
@@ -130,9 +130,9 @@ router.put('/:id', requireAdmin, async (req: AuthRequest, res: Response): Promis
       event: updated,
     };
 
-    sendNotificationToAllUsers(payload);
-    const io = getSocketIO();
+    const io = req.app.get('io') || getSocketIO();
     if (io) {
+      io.emit('notification:new', payload);
       io.emit('event:updated', updated);
     }
 
@@ -183,9 +183,9 @@ router.delete('/:id', requireAdmin, async (req: AuthRequest, res: Response): Pro
       eventId,
     };
 
-    sendNotificationToAllUsers(payload);
-    const io = getSocketIO();
+    const io = req.app.get('io') || getSocketIO();
     if (io) {
+      io.emit('notification:new', payload);
       io.emit('event:deleted', { eventId, title: eventTitle });
     }
 

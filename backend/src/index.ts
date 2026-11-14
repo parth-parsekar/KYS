@@ -16,7 +16,8 @@ async function bootstrap() {
     await seedInitialData();
 
     const server = http.createServer(app);
-    initSocketServer(server);
+    const io = initSocketServer(server);
+    app.set('io', io);
     startScheduler();
 
     server.listen(PORT, () => {
