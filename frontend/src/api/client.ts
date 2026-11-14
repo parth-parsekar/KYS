@@ -210,5 +210,22 @@ export const api = {
     request<{ success: boolean; message: string; user: any }>(`/admin/users/${id}/reject`, {
       method: 'PATCH',
     }),
+
+  // Events & Real-time Announcements
+  getEvents: () => request<{ success: boolean; count: number; data: any[] }>('/events'),
+  createEvent: (eventData: { title: string; description: string; eventDate: string; category?: string; priority?: string }) =>
+    request<{ success: boolean; message: string; data: any }>('/events', {
+      method: 'POST',
+      body: JSON.stringify(eventData),
+    }),
+  updateEvent: (id: string, eventData: { title?: string; description?: string; eventDate?: string; category?: string; priority?: string }) =>
+    request<{ success: boolean; message: string; data: any }>(`/events/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(eventData),
+    }),
+  deleteEvent: (id: string) =>
+    request<{ success: boolean; message: string; eventId: string }>(`/events/${id}`, {
+      method: 'DELETE',
+    }),
 };
 

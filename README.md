@@ -11,7 +11,22 @@ A modern, privacy-focused subscription management and spending intelligence web 
 - **Spending Analytics & Insights**: Interactive visual charts for 12-month historical spending trends, monthly commitments, and category breakdowns.
 - **Budget & Threshold Alerts**: Set custom monthly spending budgets with automatic proactive threshold notifications.
 - **Renewal Reminders**: Real-time renewal alerts via WebSockets so you can cancel or adjust services before you get billed.
+- **Live Event Lifecycle & Broadcasts**: Administrators can create, update, and cancel platform announcements and events with instantaneous real-time WebSocket notifications sent to all active users.
+- **Interactive Notification Bell & Dropdown**: Real-time unread notification count badge and interactive dropdown menu with one-click "mark all read" functionality.
 - **Privacy First**: Zero banking credentials or credit card numbers required. Your personal records and workspace remain strictly isolated.
+
+---
+
+## Lab & Feature Verification Screenshots
+
+All real-time WebSocket event notification and telemetry verification screenshots are available in the [`screenshots/`](./screenshots) directory:
+
+1. **Admin Creating an Event & User Receiving Notification**: [`screenshots/1_admin_create_event_user_notification.png`](./screenshots/1_admin_create_event_user_notification.png)
+2. **Admin Updating an Event & User Receiving Notification**: [`screenshots/2_admin_update_event_user_notification.png`](./screenshots/2_admin_update_event_user_notification.png)
+3. **Admin Deleting an Event & User Receiving Notification**: [`screenshots/3_admin_delete_event_user_notification.png`](./screenshots/3_admin_delete_event_user_notification.png)
+4. **Successful Client Connection & Disconnection Logs**: [`screenshots/4_client_connection_disconnection_logs.png`](./screenshots/4_client_connection_disconnection_logs.png)
+5. **Notification Bell Displaying Notification Count**: [`screenshots/5_notification_bell_count.png`](./screenshots/5_notification_bell_count.png)
+6. **Notification Dropdown Displaying Received Notifications**: [`screenshots/6_notification_dropdown.png`](./screenshots/6_notification_dropdown.png)
 
 ---
 

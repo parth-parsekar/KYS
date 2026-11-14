@@ -12,6 +12,7 @@ import budgetRoutes from './routes/budget.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import billingRoutes from './routes/billing.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import eventRoutes from './routes/event.routes.js';
 
 export const app = express();
 
@@ -63,6 +64,7 @@ app.use('/api/budget', budgetRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/events', eventRoutes);
 
 // In production or containerized environments, serve the compiled React SPA
 const frontendDist = path.resolve(process.cwd(), 'frontend/dist');
