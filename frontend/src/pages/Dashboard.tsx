@@ -12,6 +12,7 @@ export const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [analytics, setAnalytics] = useState<any>(null);
+  const [events, setEvents] = useState<any[]>([]);
 
   useEffect(() => {
     loadDashboardData();
@@ -20,9 +21,15 @@ export const Dashboard: React.FC = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const res = await api.getAnalytics();
+      const [res, eventRes] = await Promise.all([
+        api.getAnalytics(),
+        api.getEvents().catch(() => ({ success: false, data: [] })),
+      ]);
       if (res.success) {
         setAnalytics(res.data);
+      }
+      if (eventRes && eventRes.success) {
+        setEvents(eventRes.data || []);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load dashboard data');
@@ -107,6 +114,80 @@ export const Dashboard: React.FC = () => {
           value={upcomingRenewals.count}
           subtext="In the next 7 days"
         />
+      </div>
+
+      {/* Live Platform Events & Real-time Announcements */}
+      <div className="bg-white border border-[#E5E7EB] rounded-xl p-5 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-base">📢</span>
+            <h3 className="text-sm font-bold text-[#111827]">Live Events &amp; Real-Time Broadcasts</h3>
+            <span className="bg-emerald-50 text-emerald-700 text-[11px] font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-emerald-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Live WebSocket Synced
+            </span>
+          </div>
+          {user?.role === 'admin' ? (
+            <button
+              onClick={() => navigate('/admin')}
+              className="text-xs text-[#2563EB] hover:text-[#1D4ED8] font-semibold flex items-center gap-1 self-start sm:self-auto"
+            >
+              <span>Manage events in Admin Console</span>
+              <span>→</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate('/notifications')}
+              className="text-xs text-[#6B7280] hover:text-[#111827] font-medium flex items-center gap-1 self-start sm:self-auto"
+            >
+              <span>View all notifications</span>
+              <span>→</span>
+            </button>
+          )}
+        </div>
+
+        {events.length === 0 ? (
+          <div className="p-4 bg-[#F9FAFB] rounded-lg text-xs text-[#6B7280] flex items-center justify-between">
+            <span>All platform services running normally. No active maintenance or announcements scheduled.</span>
+            <span className="text-[11px] text-[#9CA3AF]">Updated just now</span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            {events.slice(0, 4).map((evt) => (
+              <div
+                key={evt._id}
+                className="p-3.5 bg-[#F9FAFB] hover:bg-gray-100/80 border border-[#E5E7EB] rounded-lg transition-colors flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
+                        evt.priority === 'high'
+                          ? 'bg-red-100 text-red-700'
+                          : evt.priority === 'medium'
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'bg-emerald-100 text-emerald-700'
+                      }`}
+                    >
+                      {evt.category || 'Platform Event'}
+                    </span>
+                    <span className="text-[11px] text-[#6B7280] font-medium">
+                      {new Date(evt.eventDate).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-bold text-[#111827] mt-2">{evt.title}</h4>
+                  <p className="text-[11px] text-[#4B5563] mt-1 line-clamp-2 leading-relaxed">
+                    {evt.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Middle Row: Monthly expenditure chart & Monthly budget */}

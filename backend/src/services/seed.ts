@@ -4,6 +4,7 @@ import { User } from '../models/User.js';
 import { Subscription } from '../models/Subscription.js';
 import { BillingHistory } from '../models/BillingHistory.js';
 import { Notification } from '../models/Notification.js';
+import { Event } from '../models/Event.js';
 
 export async function seedInitialData(): Promise<void> {
   const catalogCount = await ServiceCatalog.countDocuments();
@@ -197,6 +198,54 @@ export async function seedInitialData(): Promise<void> {
     ]);
 
     console.log('Alex Morgan demo subscription & notification dataset seeded successfully.');
+  }
+
+  // Seed demo platform events & real-time announcements if none exist
+  const eventCount = await Event.countDocuments();
+  if (eventCount === 0 && admin) {
+    console.log('Seeding initial platform events and notifications...');
+    const now = new Date();
+    const event1 = await Event.create({
+      title: 'Scheduled System Maintenance Window',
+      description: 'Database performance indexing on Nov 18 from 02:00 to 03:00 AM UTC. Subscriptions remain active.',
+      eventDate: new Date(now.getTime() + 4 * 86400000),
+      category: 'Maintenance',
+      priority: 'high',
+      createdBy: admin._id,
+    });
+
+    const event2 = await Event.create({
+      title: 'Black Friday Subscription Perks',
+      description: 'Special promotional discounts on Figma and Notion annual plans now available for all registered users.',
+      eventDate: new Date(now.getTime() + 10 * 86400000),
+      category: 'Special Offer',
+      priority: 'medium',
+      createdBy: admin._id,
+    });
+
+    if (alex) {
+      await Notification.create([
+        {
+          user: alex._id,
+          type: 'system',
+          title: '📢 New Event: Scheduled System Maintenance Window',
+          message: 'Database performance indexing on Nov 18 from 02:00 to 03:00 AM UTC. Subscriptions remain active.',
+          isRead: false,
+          metadata: { eventId: event1._id, action: 'created' },
+          createdAt: new Date(),
+        },
+        {
+          user: alex._id,
+          type: 'system',
+          title: '✨ New Event: Black Friday Subscription Perks',
+          message: 'Special promotional discounts on Figma and Notion annual plans now available for all registered users.',
+          isRead: false,
+          metadata: { eventId: event2._id, action: 'created' },
+          createdAt: new Date(),
+        },
+      ]);
+    }
+    console.log('Seeded 2 platform events and user notifications.');
   }
 }
 

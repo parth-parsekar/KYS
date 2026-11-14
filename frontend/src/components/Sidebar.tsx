@@ -50,7 +50,7 @@ export const Sidebar: React.FC = () => {
             <NavLink to="/notifications" className={navItemClass}>
               <span>Notifications</span>
               {unreadCount > 0 && (
-                <span className="text-[11px] bg-[#E5E7EB] text-[#374151] px-2 py-0.5 rounded-full font-semibold">
+                <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full font-extrabold shadow-xs">
                   {unreadCount}
                 </span>
               )}
@@ -67,7 +67,10 @@ export const Sidebar: React.FC = () => {
             {/* Admin variant */}
             {user?.role === 'admin' && (
               <NavLink to="/admin" className={navItemClass}>
-                <span>Admin dashboard</span>
+                <span>Admin &amp; Events</span>
+                <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold uppercase">
+                  Admin
+                </span>
               </NavLink>
             )}
 

@@ -11,12 +11,19 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ breadcrumb, onOpenMobileMenu }) => {
   const { user } = useAuth();
-  const { unreadCount, recentNotifications, markAsRead, markAllAsRead } = useSocket();
+  const { unreadCount, recentNotifications, markAsRead, markAllAsRead, refreshNotifications } = useSocket();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const toggleDropdown = () => {
+    if (!isDropdownOpen) {
+      refreshNotifications();
+    }
+    setIsDropdownOpen(!isDropdownOpen);
+  };
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -118,7 +125,7 @@ export const Header: React.FC<HeaderProps> = ({ breadcrumb, onOpenMobileMenu }) 
         <div className="flex items-center space-x-2 shrink-0 relative" ref={dropdownRef}>
           {/* Notification Bell Button */}
           <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            onClick={toggleDropdown}
             className="p-2 text-[#374151] hover:text-[#111827] rounded-lg hover:bg-gray-100 transition-colors relative"
             title="Notifications"
             aria-label="Notifications"
@@ -162,7 +169,7 @@ export const Header: React.FC<HeaderProps> = ({ breadcrumb, onOpenMobileMenu }) 
           {/* Notification Bell with Badge & Dropdown */}
           <div className="relative" ref={dropdownRef}>
             <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              onClick={toggleDropdown}
               className="relative p-2 text-[#4B5563] hover:text-[#111827] hover:bg-gray-100 rounded-xl transition-all flex items-center justify-center"
               title="Notifications"
               aria-label="Notifications"

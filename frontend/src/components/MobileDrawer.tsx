@@ -92,7 +92,12 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
               onClick={() => handleNav('/notifications')}
               className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg border border-[#E5E7EB] text-sm font-medium text-[#111827] hover:bg-gray-50 transition-colors"
             >
-              <span>Notifications ({unreadCount})</span>
+              <span>Notifications</span>
+              {unreadCount > 0 && (
+                <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full font-bold">
+                  {unreadCount}
+                </span>
+              )}
             </button>
             <button
               onClick={() => handleNav('/preferences')}
@@ -123,7 +128,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
                 onClick={() => handleNav('/admin')}
                 className="w-full text-left px-3.5 py-2.5 rounded-lg border border-[#E5E7EB] text-sm font-medium text-[#111827] hover:bg-gray-50 transition-colors flex items-center justify-between"
               >
-                <span>Admin dashboard</span>
+                <span>Admin dashboard &amp; Events</span>
                 <span>→</span>
               </button>
             </div>
