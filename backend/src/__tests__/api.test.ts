@@ -39,13 +39,24 @@ describe('KYS PRD Acceptance Tests', () => {
 
     expect(regRes.status).toBe(201);
     expect(regRes.body.success).toBe(true);
-    expect(regRes.body.token).toBeDefined();
+    expect(regRes.body.pendingApproval).toBe(true);
     expect(regRes.body.user.role).toBe('user');
+    expect(regRes.body.user.approvalStatus).toBe('pending');
 
-    userToken = regRes.body.token;
     userId = regRes.body.user.id;
 
-    // Login check
+    // Login check while pending should be rejected with 403 PENDING_APPROVAL
+    const pendingLogin = await request(app).post('/api/auth/login').send({
+      email: 'consumer@example.com',
+      password: 'password123',
+    });
+    expect(pendingLogin.status).toBe(403);
+    expect(pendingLogin.body.code).toBe('PENDING_APPROVAL');
+
+    // Admin approves the user
+    await User.findByIdAndUpdate(userId, { approvalStatus: 'approved' });
+
+    // Now login check succeeds
     const loginRes = await request(app).post('/api/auth/login').send({
       email: 'consumer@example.com',
       password: 'password123',
@@ -53,13 +64,22 @@ describe('KYS PRD Acceptance Tests', () => {
     expect(loginRes.status).toBe(200);
     expect(loginRes.body.token).toBeDefined();
 
-    // Register second user for privacy/isolation tests
+    userToken = loginRes.body.token;
+
+    // Register second user for privacy/isolation tests and approve them
     const otherRes = await request(app).post('/api/auth/register').send({
       name: 'Other Person',
       email: 'other@example.com',
       password: 'password123',
     });
-    otherUserToken = otherRes.body.token;
+    expect(otherRes.status).toBe(201);
+    await User.findByIdAndUpdate(otherRes.body.user.id, { approvalStatus: 'approved' });
+
+    const otherLogin = await request(app).post('/api/auth/login').send({
+      email: 'other@example.com',
+      password: 'password123',
+    });
+    otherUserToken = otherLogin.body.token;
 
     // Create an Admin user directly in DB
     const adminUser = await User.create({
@@ -67,6 +87,7 @@ describe('KYS PRD Acceptance Tests', () => {
       email: 'admin@test.com',
       passwordHash: 'hashed',
       role: 'admin',
+      approvalStatus: 'approved',
     });
 
     adminToken = jwt.sign(
