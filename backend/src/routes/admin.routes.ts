@@ -1,4 +1,5 @@
 import { Router, Response } from 'express';
+import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
 import { Subscription } from '../models/Subscription.js';
 import { BillingHistory } from '../models/BillingHistory.js';
@@ -303,6 +304,53 @@ router.patch('/users/:id/reject', async (req: AuthRequest, res: Response): Promi
     });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || 'Error rejecting user' });
+  }
+});
+
+// POST /api/admin/users - Manually register / add a new user by administrator
+router.post('/users', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { name, email, password, role = 'user', preferredCurrency = 'USD', timezone = 'UTC' } = req.body;
+    if (!name || !email || !password) {
+      res.status(400).json({ success: false, message: 'Name, email, and password are required.' });
+      return;
+    }
+    if (password.length < 6) {
+      res.status(400).json({ success: false, message: 'Password must be at least 6 characters long.' });
+      return;
+    }
+    const existing = await User.findOne({ email: email.toLowerCase().trim() });
+    if (existing) {
+      res.status(400).json({ success: false, message: 'An account with this email already exists.' });
+      return;
+    }
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+    const newUser = await User.create({
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      passwordHash,
+      role: role === 'admin' ? 'admin' : 'user',
+      approvalStatus: 'approved',
+      preferredCurrency,
+      timezone,
+      monthlyBudget: 300,
+      alertThreshold: 80,
+      notifyOnThreshold: true,
+    });
+    res.status(201).json({
+      success: true,
+      message: `User ${newUser.name} created and approved successfully.`,
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        approvalStatus: newUser.approvalStatus,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Error creating user' });
   }
 });
 

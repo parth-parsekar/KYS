@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recha
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { StatCard } from '../components/StatCard';
+import { AdminWaitlistSection } from '../components/AdminWaitlistSection';
 import { getCurrencySymbol } from '../utils/currencyUtils';
 
 export const Dashboard: React.FC = () => {
@@ -115,6 +116,11 @@ export const Dashboard: React.FC = () => {
           subtext="In the next 7 days"
         />
       </div>
+
+      {/* For Administrators: Waitlist & User Registration Access Approvals */}
+      {user?.role === 'admin' && (
+        <AdminWaitlistSection showAdminLink={true} />
+      )}
 
       {/* Live Platform Events & Real-time Announcements */}
       <div className="bg-white border border-[#E5E7EB] rounded-xl p-5 shadow-xs space-y-3">

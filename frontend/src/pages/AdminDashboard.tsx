@@ -1,9 +1,10 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { StatCard } from '../components/StatCard';
+import { AdminWaitlistSection } from '../components/AdminWaitlistSection';
 import { AdminEventsSection } from '../components/AdminEventsSection';
 
 export const AdminDashboard: React.FC = () => {
@@ -16,12 +17,8 @@ export const AdminDashboard: React.FC = () => {
   const [selectedAdminMonth, setSelectedAdminMonth] = useState<string | null>(null);
   const [error, setError] = useState('');
 
-  // Waitlist state
+  // Waitlist state for stat card
   const [waitlist, setWaitlist] = useState<any[]>([]);
-  const [allUsersList, setAllUsersList] = useState<any[]>([]);
-  const [waitlistTab, setWaitlistTab] = useState<'pending' | 'all'>('pending');
-  const [actionFeedback, setActionFeedback] = useState<string | null>(null);
-  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user && user.role !== 'admin') {
@@ -55,45 +52,9 @@ export const AdminDashboard: React.FC = () => {
       const res = await api.getAdminWaitlist();
       if (res.success) {
         setWaitlist(res.waitlist || []);
-        setAllUsersList(res.recentUsers || []);
       }
     } catch (e) {
       console.warn('Could not load waitlist:', e);
-    }
-  };
-
-  const handleApprove = async (userId: string, userName: string) => {
-    try {
-      setActionLoadingId(userId);
-      const res = await api.approveUser(userId);
-      if (res.success) {
-        setActionFeedback(`Approved ${userName} successfully! User can now sign in.`);
-        await loadWaitlist();
-        await loadAdminDashboard();
-        setTimeout(() => setActionFeedback(null), 4000);
-      }
-    } catch (err: any) {
-      alert(err.message || 'Failed to approve user');
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
-
-  const handleReject = async (userId: string, userName: string) => {
-    if (!confirm(`Are you sure you want to reject access for ${userName}?`)) return;
-    try {
-      setActionLoadingId(userId);
-      const res = await api.rejectUser(userId);
-      if (res.success) {
-        setActionFeedback(`Rejected registration for ${userName}.`);
-        await loadWaitlist();
-        await loadAdminDashboard();
-        setTimeout(() => setActionFeedback(null), 4000);
-      }
-    } catch (err: any) {
-      alert(err.message || 'Failed to reject user');
-    } finally {
-      setActionLoadingId(null);
     }
   };
 
@@ -238,151 +199,7 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       {/* New User Waitlist & Access Approvals Section */}
-      <div className="bg-white border border-[#E5E7EB] rounded-xl p-6 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-[#111827]">New user waitlist &amp; access approvals</h3>
-              {waitlist.length > 0 && (
-                <span className="bg-amber-100 text-amber-800 text-[11px] font-bold px-2 py-0.5 rounded-full">
-                  {waitlist.length} pending
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-[#6B7280] mt-0.5">
-              Review and moderate incoming registrations before granting login access to the platform.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-1.5 bg-[#F3F4F6] p-1 rounded-lg border border-[#E5E7EB]">
-            <button
-              type="button"
-              onClick={() => setWaitlistTab('pending')}
-              className={`text-xs px-2.5 py-1 rounded-md font-medium transition-all ${
-                waitlistTab === 'pending'
-                  ? 'bg-white text-[#111827] shadow-xs'
-                  : 'text-[#6B7280] hover:text-[#111827]'
-              }`}
-            >
-              Pending ({waitlist.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setWaitlistTab('all')}
-              className={`text-xs px-2.5 py-1 rounded-md font-medium transition-all ${
-                waitlistTab === 'all'
-                  ? 'bg-white text-[#111827] shadow-xs'
-                  : 'text-[#6B7280] hover:text-[#111827]'
-              }`}
-            >
-              Recent users ({allUsersList.length})
-            </button>
-          </div>
-        </div>
-
-        {actionFeedback && (
-          <div className="p-3 bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs rounded-lg flex items-center gap-2">
-            <span>✅</span>
-            <span>{actionFeedback}</span>
-          </div>
-        )}
-
-        <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
-          <table className="w-full text-left text-xs min-w-[580px]">
-            <thead>
-              <tr className="border-b border-[#F3F4F6] text-[#6B7280]">
-                <th className="py-2.5 font-medium">User</th>
-                <th className="py-2.5 font-medium">Role</th>
-                <th className="py-2.5 font-medium">Status</th>
-                <th className="py-2.5 font-medium">Registered</th>
-                <th className="py-2.5 font-medium text-right">Moderation Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#F3F4F6]">
-              {(waitlistTab === 'pending' ? waitlist : allUsersList).length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-8 text-center text-[#6B7280]">
-                    {waitlistTab === 'pending'
-                      ? 'No pending waitlist requests. All registered users have been approved.'
-                      : 'No users found.'}
-                  </td>
-                </tr>
-              ) : (
-                (waitlistTab === 'pending' ? waitlist : allUsersList).map((u: any) => {
-                  const status = u.approvalStatus || 'approved';
-                  const isPending = status === 'pending';
-                  const isRejected = status === 'rejected';
-                  const isApproved = status === 'approved';
-                  const isLoadingThis = actionLoadingId === u._id;
-
-                  return (
-                    <tr key={u._id} className="hover:bg-[#F9FAFB] transition-colors">
-                      <td className="py-3 font-semibold text-[#111827]">
-                        <div>{u.name}</div>
-                        <div className="text-[11px] font-normal text-[#6B7280]">{u.email}</div>
-                      </td>
-                      <td className="py-3 text-[#374151]">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
-                          u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          {u.role}
-                        </span>
-                      </td>
-                      <td className="py-3">
-                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold inline-flex items-center gap-1 ${
-                          isPending
-                            ? 'bg-amber-100 text-amber-800'
-                            : isRejected
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-emerald-100 text-emerald-800'
-                        }`}>
-                          <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-                          {isPending ? 'Pending Approval' : isRejected ? 'Rejected' : 'Approved'}
-                        </span>
-                      </td>
-                      <td className="py-3 text-[#6B7280]">
-                        {new Date(u.createdAt).toLocaleDateString(undefined, {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </td>
-                      <td className="py-3 text-right">
-                        {u.role === 'admin' ? (
-                          <span className="text-[11px] text-[#9CA3AF]">Administrator</span>
-                        ) : (
-                          <div className="inline-flex items-center gap-1.5 justify-end">
-                            {(!isApproved || isRejected) && (
-                              <button
-                                type="button"
-                                disabled={isLoadingThis}
-                                onClick={() => handleApprove(u._id, u.name)}
-                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-[11px] rounded-md transition-colors disabled:opacity-50"
-                              >
-                                {isLoadingThis ? 'Saving...' : '✓ Accept'}
-                              </button>
-                            )}
-                            {(!isRejected || isApproved) && (
-                              <button
-                                type="button"
-                                disabled={isLoadingThis}
-                                onClick={() => handleReject(u._id, u.name)}
-                                className="px-2.5 py-1 bg-white hover:bg-red-50 text-red-600 border border-red-200 font-medium text-[11px] rounded-md transition-colors disabled:opacity-50"
-                              >
-                                ✕ Reject
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <AdminWaitlistSection onRefreshStats={() => loadAdminDashboard(timeframe)} />
 
       {/* Live Events & Real-time Announcements */}
       <AdminEventsSection />

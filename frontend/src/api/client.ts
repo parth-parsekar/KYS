@@ -211,6 +211,12 @@ export const api = {
       method: 'PATCH',
     }),
 
+  createUser: (userData: { name: string; email: string; password: string; role?: string }) =>
+    request<{ success: boolean; message: string; user: any }>('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    }),
+
   // Events & Real-time Announcements
   getEvents: () => request<{ success: boolean; count: number; data: any[] }>('/events'),
   createEvent: (eventData: { title: string; description: string; eventDate: string; category?: string; priority?: string }) =>
